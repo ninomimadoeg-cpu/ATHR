@@ -1,5 +1,18 @@
 # Site Progress — handoff kit
 
+## Try it on your own computer first (local test)
+You need Python 3 (Mac: already installed; Windows: install from python.org, tick "Add to PATH").
+
+1. Open a terminal in this folder.
+2. Run `python3 local/serve.py` (Windows: `py local\serve.py`).
+3. Open http://localhost:8080 → **Load project** (WG5 with sample entries).
+4. Use the **Manager / Site engineer** switch at the top to see both sides.
+5. To test on your Android phone: connect it to the same Wi-Fi and open the second address the
+   terminal prints (http://192.168.x.x:8080).
+
+Everything you enter is saved in `local/data/`. Delete that folder to start from zero.
+Stop the server with Ctrl+C.
+
 Everything needed to build the real (phone-ready) Site Progress app in **Claude Code**.
 
 ## How to start
