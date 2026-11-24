@@ -1,0 +1,41 @@
+{
+ "params": {"upturn": 0.30, "shower": 3.8},
+ "prefilled_note": "Claude pre-filled the rooms from the drawings (Architecture plan dwg 01, finishing schedule dwg 00). Dimensions are read or estimated from the PDF plans, not measured; reception, corridors, guest/maid bathrooms and terraces use area/perimeter overrides because they are irregular. Openings are estimated from the door and window schedule. Please check every yellow cell on site or against CAD before importing. Kitchen follows the plan tags and the BOQ (F03 floor, C02 ceiling); the finishing schedule table says F01 and C03 – change it here if that is the intent.",
+ "codes": [
+  {"code":"F01","basis":"floor","desc":"Porcelain 0.60×1.20","loc":"Reception – corridors – kitchen (table); also living, maid room (plan tags)","boq":"F2.1"},
+  {"code":"F02","basis":"floor","desc":"HDF 0.15×0.60","loc":"Bedrooms","boq":"F2.2"},
+  {"code":"F03","basis":"floor","desc":"Ceramic 0.60×0.60","loc":"Toilets (+ kitchen per plan tag)","boq":"F2.3"},
+  {"code":"S01","basis":"skirting","desc":"Porcelain skirting H=0.10","loc":"Reception – corridors","boq":"F3.1"},
+  {"code":"S02","basis":"skirting","desc":"HDF skirting H=0.10","loc":"Bedrooms","boq":"F3.2"},
+  {"code":"P01","basis":"wall","desc":"Painted wall","loc":"Reception – bedrooms – maid room – corridors","boq":"F4.1"},
+  {"code":"CR1","basis":"wall","desc":"Ceramic wall","loc":"Kitchen – toilet","boq":"F4.2"},
+  {"code":"C01","basis":"ceiling","desc":"Standard gypsum board","loc":"Reception – bedrooms – maid room – corridors","boq":"F1.1"},
+  {"code":"C02","basis":"ceiling","desc":"Moisture-resistant gypsum board","loc":"Toilets (+ kitchen per plan tag)","boq":"F1.2"},
+  {"code":"C03","basis":"ceiling","desc":"Fire-resistant gypsum board","loc":"Kitchen (table) – no BOQ line","boq":null},
+  {"code":"CP","basis":"ceiling-paint","desc":"Ceiling painting","loc":"All gypsum ceilings","boq":"F4.3"},
+  {"code":"SC7","basis":"screed7","desc":"Screed 7 cm under floor finishes","loc":"All floors","boq":"F6.2"},
+  {"code":"SC25","basis":"screed25","desc":"Screed 2.5 cm","loc":"Wet areas and terraces","boq":"F6.1"},
+  {"code":"WPF","basis":"wp-floor","desc":"Waterproofing – bathroom floors","loc":"Bathrooms 1–4","boq":"F5.1"},
+  {"code":"WPU","basis":"wp-upturn","desc":"Waterproofing – 30 cm upturn","loc":"Rooms with WPF","boq":"F5.2"},
+  {"code":"WPS","basis":"wp-shower","desc":"Waterproofing – shower walls","loc":"Showers (count per room)","boq":"F5.3"},
+  {"code":"WPT","basis":"wp-floor","desc":"Waterproofing – terraces","loc":"Terraces 1–3","boq":"F5.4"}
+ ],
+ "rooms": [
+  {"id":"REC","en":"Reception","ar":"الاستقبال","type":"Room","area_ov":58.7,"per_ov":40,"h":2.8,"open":12.0,"doors":5.4,"floor":"F01","skirt":"S01","wall1":"P01","ceil":"C01","cpaint":"Y","sc7":"Y","sc25":"N","notes":"Irregular – overrides estimated. Includes D1 entrance and D5 (3.58 m) to terrace 1"},
+  {"id":"LIV","en":"Living room","ar":"المعيشة","type":"Room","len":5.56,"wid":4.79,"h":2.8,"open":4.4,"doors":1.0,"floor":"F01","skirt":"S01","wall1":"P01","ceil":"C01","cpaint":"Y","sc7":"Y","sc25":"N","notes":"W3 window"},
+  {"id":"COR","en":"Corridors","ar":"الطرقات","type":"Room","area_ov":27.4,"per_ov":42,"h":2.8,"open":11.9,"doors":5.4,"floor":"F01","skirt":"S01","wall1":"P01","ceil":"C01","cpaint":"Y","sc7":"Y","sc25":"N","notes":"Bedroom corridor 11.81 m + kitchen/bath corridors – overrides estimated"},
+  {"id":"MAID","en":"Maid room","ar":"غرفة الخادمة","type":"Room","len":0.9,"wid":2.19,"h":2.8,"open":1.98,"doors":0.9,"floor":"F01","skirt":"S01","wall1":"P01","ceil":"C01","cpaint":"Y","sc7":"Y","sc25":"N","notes":"Small – check dimensions on site"},
+  {"id":"BED1","en":"Bedroom 1","ar":"غرفة نوم ١","type":"Room","len":4.62,"wid":4.30,"h":2.8,"open":5.13,"doors":0.9,"floor":"F02","skirt":"S02","wall1":"P01","ceil":"C01","cpaint":"Y","sc7":"Y","sc25":"N","notes":"D2 + W1"},
+  {"id":"BED2","en":"Bedroom 2","ar":"غرفة نوم ٢","type":"Room","len":3.95,"wid":4.55,"h":2.8,"open":6.15,"doors":0.9,"floor":"F02","skirt":"S02","wall1":"P01","ceil":"C01","cpaint":"Y","sc7":"Y","sc25":"N","notes":"D2 + W2"},
+  {"id":"MAST","en":"Master bedroom","ar":"غرفة النوم الرئيسية","type":"Room","len":4.42,"wid":6.56,"h":2.8,"open":6.14,"doors":1.7,"floor":"F02","skirt":"S02","wall1":"P01","ceil":"C01","cpaint":"Y","sc7":"Y","sc25":"N","notes":"D2 + W3 + D4 to terrace 3"},
+  {"id":"DRS","en":"Dressing room","ar":"غرفة الملابس","type":"Room","len":3.46,"wid":1.64,"h":2.8,"open":1.76,"doors":0.8,"floor":"F02","skirt":"S02","wall1":"P01","ceil":"C01","cpaint":"Y","sc7":"Y","sc25":"N","notes":"Room next to master bathroom – confirm use"},
+  {"id":"KIT","en":"Kitchen","ar":"المطبخ","type":"Wet","len":3.36,"wid":5.99,"h":3.25,"open":3.5,"floor":"F03","wall1":"CR1","ceil":"C02","cpaint":"Y","sc7":"Y","sc25":"N","notes":"Plan tag: C02/CR1/F03. Finishing table says F01 + C03 – confirm"},
+  {"id":"B1","en":"Bathroom 1 (guest)","ar":"حمام ١ (الضيوف)","type":"Wet","area_ov":2.6,"per_ov":6.5,"h":3.25,"open":2.4,"floor":"F03","wall1":"CR1","ceil":"C02","cpaint":"Y","sc7":"Y","sc25":"Y","wp":"WPF","showers":1,"notes":"Near entrance – irregular"},
+  {"id":"B2","en":"Bathroom 2 (maid)","ar":"حمام ٢ (الخادمة)","type":"Wet","area_ov":1.8,"per_ov":5.5,"h":3.25,"open":2.2,"floor":"F03","wall1":"CR1","ceil":"C02","cpaint":"Y","sc7":"Y","sc25":"Y","wp":"WPF","showers":1,"notes":""},
+  {"id":"B3","en":"Bathroom 3","ar":"حمام ٣","type":"Wet","len":2.97,"wid":2.60,"h":3.25,"open":2.4,"floor":"F03","wall1":"CR1","ceil":"C02","cpaint":"Y","sc7":"Y","sc25":"Y","wp":"WPF","showers":1,"notes":"Off living-room corridor"},
+  {"id":"B4","en":"Bathroom 4 (master)","ar":"حمام ٤ (الرئيسي)","type":"Wet","len":3.50,"wid":3.00,"h":3.25,"open":2.4,"floor":"F03","wall1":"CR1","ceil":"C02","cpaint":"Y","sc7":"Y","sc25":"Y","wp":"WPF","showers":1,"notes":""},
+  {"id":"T1","en":"Terrace 1 (reception)","ar":"تراس ١ (الاستقبال)","type":"Terrace","area_ov":5.7,"per_ov":9,"sc25":"Y","wp":"WPT","notes":"No floor finish in BOQ"},
+  {"id":"T2","en":"Terrace 2 (bedroom 2)","ar":"تراس ٢ (غرفة نوم ٢)","type":"Terrace","area_ov":5.6,"per_ov":9.5,"sc25":"Y","wp":"WPT","notes":""},
+  {"id":"T3","en":"Terrace 3 (master)","ar":"تراس ٣ (الرئيسية)","type":"Terrace","area_ov":3.39,"per_ov":8,"sc25":"Y","wp":"WPT","notes":"Triangular bay"}
+ ]
+}

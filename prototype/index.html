@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Site Progress</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a practical site tool — calm, exact, nothing decorative.
+   IDEA: the site engineer's progress sheet: rooms down the side, trades across, ticks filling in.
+   PICTURE: the S-curve (planned vs actual) and the area × trade grid filling with colour.
+   COLOUR and TYPE: black and white plus one mint field; red only for "behind". Space Grotesk + Inter; IBM Plex Sans Arabic.
+   LAYOUT: phone-first site screens with huge targets; manager screens are a report: finding, figures, curve, grid. */
+:root{color-scheme:light dark;
+ --bg:light-dark(#ffffff,#0d0f0e);--ink:light-dark(#0d0f0e,#f1f4f2);--mute:light-dark(#5d6661,#a3ada7);
+ --line:light-dark(#e3e7e4,#262b28);--soft:light-dark(#f4f6f5,#171a18);
+ --mint:light-dark(#b8f5d0,#1d5c3c);--mint-ink:light-dark(#0b6b3f,#b8f5d0);--done:light-dark(#1f8a5b,#5fd39a);
+ --red:light-dark(#c8321f,#ff7a66);--red-soft:light-dark(#fde8e4,#3a1712);
+ --f-h:"Space Grotesk","IBM Plex Sans Arabic",system-ui,sans-serif;--f-b:Inter,"IBM Plex Sans Arabic",system-ui,sans-serif}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+:lang(ar){--f-h:"IBM Plex Sans Arabic",system-ui,sans-serif;--f-b:"IBM Plex Sans Arabic",system-ui,sans-serif}
+*{box-sizing:border-box;min-width:0}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-b);overflow-x:clip}
+h1,h2,h3{font-family:var(--f-h);font-weight:700;margin:0;text-wrap:balance}
+h1{font-size:clamp(26px,4.2vw,40px);line-height:1.08}h2{font-size:22px;line-height:1.2}h3{font-size:17px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--done);outline-offset:2px}
+.top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:10px;padding:10px max(4vw,14px);flex-wrap:wrap}
+.brand{font:700 17px var(--f-h);display:flex;align-items:center;gap:8px;margin-inline-end:auto}
+.brand i{width:14px;height:14px;background:var(--mint);border:2px solid var(--ink);display:inline-block}
+.tabs{display:flex;gap:4px;overflow-x:auto;padding:0 max(4vw,14px)}
+.tab{flex:none;border:0;background:none;padding:10px 12px;min-height:44px;font-weight:600;color:var(--mute);border-bottom:3px solid transparent}
+.tab[aria-current=true]{color:var(--ink);border-color:var(--ink)}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--soft);border-radius:999px;padding:4px 10px;font-size:13px;white-space:nowrap}
+.pill.warn{background:var(--red-soft);border-color:transparent;color:var(--red)}
+.pill.ok{background:var(--mint);border-color:transparent;color:var(--mint-ink)}
+.btn{min-height:44px;padding:10px 16px;border-radius:10px;border:1.5px solid var(--ink);background:var(--bg);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.pri{background:var(--ink);color:var(--bg)}
+.btn.mint{background:var(--mint);color:var(--mint-ink);border-color:transparent}
+.btn.ghost{border-color:var(--line)}
+.btn.sm{min-height:36px;padding:6px 12px;font-size:14px}
+.btn:disabled{opacity:.45;cursor:default}
+select,input[type=date],input[type=number],textarea,input[type=text]{min-height:44px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);padding:8px 12px;font-size:16px}
+main{max-width:1240px;margin:0 auto;padding:18px max(4vw,14px) 80px}
+.muted{color:var(--mute)}.small{font-size:13px}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.sp{margin-inline-start:auto}
+.card{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--bg)}
+.grid{display:grid;gap:12px}
+.note{background:var(--soft);border-radius:12px;padding:12px 14px;font-size:14px}
+/* site: area tiles */
+.areas{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:14px}
+.area{position:relative;text-align:start;border:1.5px solid var(--line);border-radius:14px;background:var(--bg);padding:14px 14px 12px;min-height:104px;display:flex;flex-direction:column;gap:6px}
+.area b{font-size:16px;line-height:1.25}
+.area .pc{font:700 26px var(--f-h);margin-top:auto}
+.area .today{position:absolute;top:10px;inset-inline-end:10px;width:10px;height:10px;border-radius:50%;background:var(--done)}
+.meter{height:8px;background:var(--soft);border-radius:99px;overflow:hidden}
+.meter>span{display:block;height:100%;background:var(--done)}
+.meter.plan{position:relative}.meter .pl{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink)}
+/* site: items */
+.chips{display:flex;gap:6px;overflow-x:auto;padding:4px 0}
+.chip{flex:none;min-height:40px;border:1.5px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 14px;font-weight:600;font-size:14px}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.items{display:grid;gap:8px;margin-top:10px}
+.item{width:100%;text-align:start;border:1.5px solid var(--line);border-radius:14px;background:var(--bg);padding:12px 14px;display:grid;gap:8px}
+.item .hd{display:flex;gap:10px;align-items:flex-start}
+.item .hd b{font-size:16px;line-height:1.3}
+.item .hd .q{margin-inline-start:auto;white-space:nowrap;font-weight:600}
+.stg{display:grid;grid-template-columns:7.5em 1fr 3em;gap:8px;align-items:center;font-size:13px}
+.stg .v{text-align:end;font-variant-numeric:tabular-nums}
+.badge{font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--mint);color:var(--mint-ink);white-space:nowrap}
+.trade-h{font:700 13px var(--f-b);color:var(--mute);margin:14px 2px 0}
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgb(0 0 0/.45);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:min(640px,100%);max-height:94vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 18px 24px;display:grid;gap:14px}
+@media(min-width:700px){.scrim{align-items:center}.sheet{border-radius:18px}}
+.seg{display:flex;border:1.5px solid var(--ink);border-radius:12px;overflow:hidden}
+.seg button{flex:1;min-height:48px;border:0;background:var(--bg);font-weight:600;font-size:14px;padding:6px}
+.seg button+button{border-inline-start:1.5px solid var(--ink)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.big{font:700 44px var(--f-h);text-align:center;width:100%;border:2px solid var(--ink)!important;min-height:76px!important}
+.quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.quick .btn{min-height:52px}
+input[type=range]{width:100%;height:44px;accent-color:var(--done)}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap}
+.thumbs img{width:76px;height:76px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.after{text-align:center;font-weight:600}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;z-index:60;font-weight:600;max-width:90vw}
+/* manager */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:2px solid var(--ink);border-bottom:1px solid var(--line);margin:18px 0}
+.kpi{padding:14px 12px}.kpi+.kpi{border-inline-start:1px solid var(--line)}
+.kpi .n{font:700 clamp(26px,3.6vw,40px)/1.05 var(--f-h);font-variant-numeric:tabular-nums}
+.kpi .l{font-size:13px;color:var(--mute)}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:0;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.hero .num{background:var(--mint);color:var(--mint-ink);padding:22px;display:flex;flex-direction:column;justify-content:space-between;gap:12px}
+.hero .num .n{font:700 clamp(54px,8vw,92px)/.95 var(--f-h)}
+.hero .num .vs{font:600 18px var(--f-h)}
+.fig{position:relative;min-height:300px}.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--mute);padding:10px 16px 0}
+.legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-inline-end:6px;background:var(--ink)}
+.legend i.a{background:var(--done);height:5px}.legend i.p{background:repeating-linear-gradient(90deg,var(--ink) 0 5px,transparent 5px 8px)}
+section{margin-top:30px}
+section>h2{margin-bottom:10px}
+.tbars{display:grid;gap:12px}
+.tbar{display:grid;grid-template-columns:8em minmax(0,1fr) 7.5em;gap:12px;align-items:center}
+.tbar .v{text-align:end;font-variant-numeric:tabular-nums;font-size:14px;white-space:nowrap}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:start;vertical-align:top}
+th{font-weight:600;color:var(--mute);font-size:13px;white-space:nowrap}
+td.n,th.n{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap}
+.heat td.h{text-align:center;font-weight:600;font-variant-numeric:tabular-nums;min-width:64px;position:relative}
+.heat td.h.lag::after{content:"";position:absolute;top:4px;inset-inline-end:4px;width:7px;height:7px;border-radius:50%;background:var(--red)}
+.neg{color:var(--red);font-weight:600}.pos{color:var(--mint-ink);font-weight:600}
+.ap{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.gallery figure{margin:0}.gallery img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:var(--soft)}
+.gallery figcaption{font-size:12px;color:var(--mute);margin-top:4px}
+.gantt{display:grid;gap:4px}
+.gr{display:grid;grid-template-columns:minmax(0,14em) minmax(0,1fr);gap:10px;align-items:center;font-size:13px}
+.gtrack{position:relative;height:16px;background:var(--soft);border-radius:4px}
+.gtrack span{position:absolute;top:0;bottom:0;background:var(--ink);border-radius:4px}
+.gtrack .now{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--red)}
+details summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.empty{padding:40px 10px;text-align:center;color:var(--mute)}
+@media(max-width:720px){.hero{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi:nth-child(3){border-inline-start:0}.tbar{grid-template-columns:6em minmax(0,1fr) 6.5em}}
+@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mute)}.stack td:empty{display:none}}
+@media(prefers-reduced-motion:no-preference){.meter>span{transition:width .4s ease}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<header class="top">
+ <div class="bar">
+  <div class="brand"><i></i><span id="brandName">Site Progress</span></div>
+  <select id="projSel" aria-label="Project" hidden></select>
+  <span id="outbox" class="pill warn" hidden></span>
+  <button id="langBtn" class="btn ghost sm" type="button">عربي</button>
+ </div>
+ <nav class="tabs" id="tabs"></nav>
+</header>
+<main id="main"><div class="empty">Loading project…</div></main>
+<div id="layer"></div>
+<script>
+{
+/* ---------- i18n ---------- */
+const T={
+en:{site:"Site entry",overview:"Overview",weekly:"Weekly report",approvals:"Approvals",photos:"Photos",baseline:"Baseline",
+ date:"Date",areas:"Areas",pickArea:"Choose the area you are working in",updatedToday:"updated today",back:"Areas",now:"Scheduled now",all:"All items",
+ done:"done",of:"of",stage:"Stage",todayQty:"Quantity done today",setPct:"Progress now",note:"Note (optional)",notePh:"Anything the manager should know",
+ addPhotos:"Add photos",save:"Save",saving:"Saving…",saved:"Saved",savedOffline:"Saved on this phone — will send when online",
+ remaining:"All remaining",after:"After saving",areaPhoto:"Area photo",todayHere:"Today in this area",del:"Delete",pending:"waiting to send",
+ noWrite:"You can view progress but not record it. Ask the project owner for edit access.",noPhoto:"Photos need upload access on this artifact.",
+ outbox:n=>`${n} waiting to send`,complete:"Complete",nothingNow:"Nothing is scheduled in this area right now — showing all items.",
+ noItems:"No BOQ items are assigned to this area.",photoOnly:"Photo of the area",cancel:"Cancel",
+ loadFail:"Can't reach the project data yet. Check the connection; this page keeps trying.",signedOut:"Sign in to Claude to use this app.",
+ noProject:"No project baseline has been loaded yet.",sample:"Sample",stillOk:"OK"},
+ar:{site:"تسجيل الموقع",overview:"نظرة عامة",weekly:"التقرير الأسبوعي",approvals:"الاعتماد",photos:"الصور",baseline:"الأساس",
+ date:"التاريخ",areas:"المناطق",pickArea:"اختر المكان الذي تعمل فيه",updatedToday:"تم التحديث اليوم",back:"المناطق",now:"المجدول الآن",all:"كل البنود",
+ done:"منفذ",of:"من",stage:"المرحلة",todayQty:"الكمية المنفذة اليوم",setPct:"نسبة الإنجاز الآن",note:"ملاحظة (اختياري)",notePh:"أي شيء يجب أن يعرفه المدير",
+ addPhotos:"إضافة صور",save:"حفظ",saving:"جاري الحفظ…",saved:"تم الحفظ",savedOffline:"تم الحفظ على الهاتف — سيُرسل عند توفر الإنترنت",
+ remaining:"كل المتبقي",after:"بعد الحفظ",areaPhoto:"صورة للمكان",todayHere:"اليوم في هذا المكان",del:"حذف",pending:"في انتظار الإرسال",
+ noWrite:"يمكنك مشاهدة التقدم فقط. اطلب صلاحية التعديل من مالك المشروع.",noPhoto:"رفع الصور يحتاج صلاحية.",
+ outbox:n=>`${n} في انتظار الإرسال`,complete:"مكتمل",nothingNow:"لا يوجد عمل مجدول في هذا المكان الآن — نعرض كل البنود.",
+ noItems:"لا توجد بنود مخصصة لهذا المكان.",photoOnly:"صورة للمكان",cancel:"إلغاء",
+ loadFail:"تعذر الوصول لبيانات المشروع. تأكد من الاتصال؛ الصفحة تحاول مرة أخرى.",signedOut:"سجّل الدخول إلى Claude لاستخدام التطبيق.",
+ noProject:"لم يتم تحميل أساس المشروع بعد.",sample:"عينة",stillOk:"حسناً"}};
+let lang="en";
+let langStored=false;
+try{const v=localStorage.getItem("sp-lang");langStored=!!v;lang=v==="ar"?"ar":"en"}catch(e){}
+const t=k=>T[lang][k]??T.en[k];
+const UA={"m²":"م²","m":"م.ط","no.":"عدد","kg":"كجم","LS":"مقطوعية"};
+const U=u=>lang==="ar"?(UA[u]||u):u;
+const nm=o=>o?(lang==="ar"?(o.ar||o.en):o.en):"";
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const dn=s=>Date.UTC(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10))/864e5;
+const ds=n=>new Date(n*864e5).toISOString().slice(0,10);
+const localToday=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
+const fmtD=s=>new Date(dn(s)*864e5).toLocaleDateString(lang==="ar"?"ar-EG-u-nu-latn":"en-GB",{day:"numeric",month:"short",timeZone:"UTC"});
+const pct=(x,d=0)=>(x*100).toFixed(d)+"%";
+const num=(x,d=2)=>{const r=Math.round(x*10**d)/10**d;return r.toLocaleString("en-US",{maximumFractionDigits:d})};
+const money=x=>"EGP "+Math.round(x).toLocaleString("en-US");
+const okId=s=>typeof s==="string"&&/^[A-Za-z0-9_-]{8,64}$/.test(s);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const clamp=x=>Math.max(0,Math.min(1,x));
+function toast(msg){const d=document.createElement("div");d.className="toast";d.textContent=msg;document.body.append(d);setTimeout(()=>d.remove(),2600)}
+const ICON={cam:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+ back:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>'};
+
+/* ---------- state ---------- */
+const S={db:null,user:null,assets:null,me:null,owner:false,canWrite:null,projects:[],pid:null,BL:null,entries:[],outbox:[],
+ view:null,area:null,filter:"now",date:localToday(),week:null,loaded:false,err:null,names:{},apFilter:"pending",phArea:"",unsubE:null};
+try{S.outbox=JSON.parse(localStorage.getItem("sp-outbox-v1")||"[]")}catch(e){S.outbox=[]}
+const saveOutbox=()=>{try{localStorage.setItem("sp-outbox-v1",JSON.stringify(S.outbox))}catch(e){}};
+
+/* ---------- baseline model ---------- */
+let M=null;
+function buildModel(BL){
+ const items={},areas={},acts={},trades={};
+ BL.items.forEach(i=>items[i.id]=i);BL.areas.forEach(a=>areas[a.id]=a);BL.acts.forEach(a=>acts[a.id]=a);BL.trades.forEach(x=>trades[x.id]=x);
+ const keys=[];let bac=0;
+ for(const it of BL.items)for(const [area,q] of Object.entries(it.alloc||{}))for(const st of it.stages){
+  const v=q*it.rate*st.w/100;bac+=v;keys.push({k:`${it.id}|${area}|${st.id}`,it,area,st,q,v,act:acts[st.act]});
+ }
+ const kmap={};keys.forEach(k=>kmap[k.k]=k);
+ const s0=dn(BL.start),w0=s0-((new Date(s0*864e5).getUTCDay()-(BL.weekStart||0)+7)%7);
+ return {items,areas,acts,trades,keys,kmap,bac,s0,e0:dn(BL.end),w0};
+}
+const plannedFrac=(act,d)=>{if(!act)return 0;const s=dn(act.s),e=dn(act.e),x=dn(d);return x<s?0:x>=e?1:(x-s+1)/(e-s+1)};
+function allEntries(){
+ const ids=new Set(S.entries.map(e=>e.id));
+ const ob=S.outbox.filter(o=>o.e.project===S.pid&&!ids.has(o.e.id)).map(o=>({...o.e,status:"pending",localPhotos:o.ph}));
+ return S.entries.concat(ob).sort((a,b)=>(a.date<b.date?-1:a.date>b.date?1:(a.at||"")<(b.at||"")?-1:1));
+}
+function stateAt(d,list){
+ const st={};
+ for(const e of list){if(e.date>d)break;const k=`${e.item}|${e.area}|${e.stage}`,K=M.kmap[k];if(!K)continue;
+  if(e.kind==="add")st[k]=clamp((st[k]||0)+(+e.val||0)/K.q);else if(e.kind==="set")st[k]=clamp(+e.val||0)}
+ return st;
+}
+function agg(d,list,group){
+ const st=stateAt(d,list),out={};
+ for(const K of M.keys){const g=group?group(K):"all";const o=out[g]||(out[g]={bac:0,pv:0,ev:0});
+  o.bac+=K.v;o.pv+=K.v*plannedFrac(K.act,d);o.ev+=K.v*(st[K.k]||0)}
+ return out;
+}
+const weekOf=d=>Math.floor((dn(d)-M.w0)/7)+1;
+const weekRange=w=>[ds(M.w0+7*(w-1)),ds(M.w0+7*(w-1)+6)];
+const lastWeek=()=>Math.ceil((M.e0-M.w0+1)/7);
+
+/* ---------- boot ---------- */
+render();
+(async()=>{
+ const [db,user,assets]=await Promise.all([claude.use("db"),claude.use("user"),claude.use("assets")]);
+ S.db=db;S.user=user;S.assets=assets;
+ if(user){S.owner=(await user.isOwner().catch(()=>false))??false;S.me=await user.id().catch(()=>null);S.canWrite=await user.can("data.write").catch(()=>null)}
+ if(!langStored&&!S.owner)lang="ar";
+ if(!db){S.err="signedOut";render();return}
+ const timer=setTimeout(()=>{if(!S.loaded){S.err="loadFail";render()}},10000);
+ db.collection("projects").onSnapshot(snap=>{
+  S.projects=snap.docs.map(d=>({id:d.id,...d.data()}));
+  if(!snap.metadata.fromCache){clearTimeout(timer);S.loaded=true;S.err=null}
+  if(!S.pid||!S.projects.find(p=>p.id===S.pid)){let saved="";try{saved=localStorage.getItem("sp-proj")||""}catch(e){}
+   S.pid=(S.projects.find(p=>p.id===saved)||S.projects[0]||{}).id||null;subEntries()}
+  const p=S.projects.find(p=>p.id===S.pid);
+  if(p&&p!==S.BL){S.BL=p;M=buildModel(p)}
+  if(!S.view)S.view=S.owner?"overview":"site";
+  render();
+ },err=>{clearTimeout(timer);S.err="loadFail";render()});
+ window.addEventListener("online",flush);setInterval(()=>{if(S.outbox.length)flush()},30000);flush();
+})();
+function subEntries(){
+ if(S.unsubE)S.unsubE();S.entries=[];
+ if(!S.pid)return;
+ S.unsubE=S.db.collection("entries").where("project","==",S.pid).onSnapshot(snap=>{
+  S.entries=snap.docs.map(d=>({...d.data(),id:d.id}));
+  const ids=new Set(S.entries.map(e=>e.id));const before=S.outbox.length;
+  S.outbox=S.outbox.filter(o=>!ids.has(o.e.id));if(S.outbox.length!==before)saveOutbox();
+  resolveNames();render();
+ },()=>{});
+}
+async function resolveNames(){
+ if(!S.user)return;const ids=[...new Set(S.entries.map(e=>e.by).filter(x=>x&&x!=="sample"))].filter(i=>!(i in S.names));
+ if(!ids.length)return;
+ try{const ps=await S.user.profiles(ids);for(const i of ids)S.names[i]=ps?.[i]?.name||"";render()}catch(e){}
+}
+const who=id=>id==="sample"?t("sample"):(S.names[id]||(id===S.me?(lang==="ar"?"أنت":"You"):(lang==="ar"?"مهندس الموقع":"Site engineer")));
+
+/* ---------- writing ---------- */
+async function compress(file){
+ const bmp=await createImageBitmap(file);const sc=Math.min(1,1600/Math.max(bmp.width,bmp.height));
+ const c=document.createElement("canvas");c.width=Math.round(bmp.width*sc);c.height=Math.round(bmp.height*sc);
+ c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+ return await new Promise(r=>c.toBlob(r,"image/jpeg",.8));
+}
+const blobToUrl=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)});
+async function dataUrlToBlob(u){return await (await fetch(u)).blob()}
+const within=(p,ms)=>Promise.race([p,new Promise((_,rj)=>setTimeout(()=>rj({code:"timeout"}),ms))]);
+async function pushOne(o){
+ const ids=[...(o.e.photos||[])];
+ if(o.ph.length>ids.length&&!S.assets)throw {code:"no_assets"};
+ for(let i=ids.length;i<o.ph.length;i++){
+  const res=await within(S.assets.upload(await dataUrlToBlob(o.ph[i]),{type:"image/jpeg"}),45000);ids.push(res.id);o.e.photos=ids;saveOutbox();
+ }
+ await within(S.db.collection("entries").doc(o.e.id).set({...o.e,photos:ids}),15000);
+}
+let flushing=false;
+async function flush(){
+ if(flushing||!S.db||!S.outbox.length)return;flushing=true;
+ try{for(const o of [...S.outbox]){try{await pushOne(o);S.outbox=S.outbox.filter(x=>x!==o);saveOutbox()}catch(e){if(e?.code==="invalid_argument"||e?.code==="invalid_request"){S.outbox=S.outbox.filter(x=>x!==o);saveOutbox();toast("An entry was refused by the server and removed.")}break}}}
+ finally{flushing=false;render()}
+}
+async function submitEntry(e,photoUrls){
+ const o={e:{...e,photos:[]},ph:photoUrls};
+ S.outbox.push(o);saveOutbox();render();
+ try{await pushOne(o);S.outbox=S.outbox.filter(x=>x!==o);saveOutbox();toast(t("saved"))}
+ catch(err){toast(err?.code==="invalid_argument"?t("noWrite"):t("savedOffline"))}
+ render();
+}
+async function setStatus(e,status){
+ try{await S.db.collection("entries").doc(e.id).update({status,apBy:S.me||"",apAt:new Date().toISOString()})}catch(err){toast("Could not update: "+(err?.code||"error"))}
+}
+
+/* ---------- render shell ---------- */
+function render(){
+ document.documentElement.lang=lang;document.documentElement.dir=lang==="ar"?"rtl":"ltr";
+ $("#langBtn").textContent=lang==="ar"?"English":"عربي";
+ $("#brandName").textContent=S.BL?nm(S.BL):"Site Progress";
+ const ps=$("#projSel");ps.hidden=S.projects.length<2;
+ ps.innerHTML=S.projects.map(p=>`<option value="${esc(p.id)}"${p.id===S.pid?" selected":""}>${esc(nm(p))}</option>`).join("");
+ const ob=S.outbox.filter(o=>o.e.project===S.pid).length;$("#outbox").hidden=!ob;$("#outbox").textContent=t("outbox")(ob);
+ const pend=S.entries.filter(e=>e.status==="entered").length;
+ const tabs=S.owner?["overview","weekly","approvals","photos","baseline","site"]:["site","overview","weekly","photos","baseline"];
+ $("#tabs").innerHTML=(S.BL?tabs:[]).map(v=>`<button class="tab" type="button" data-view="${v}" aria-current="${S.view===v}">${esc(t(v))}${v==="approvals"&&pend?` <span class="pill warn">${pend}</span>`:""}</button>`).join("");
+ const m=$("#main");
+ if(S.err==="signedOut"){m.innerHTML=`<div class="empty">${esc(t("signedOut"))}</div>`;return}
+ if(!S.loaded){m.innerHTML=`<div class="empty">${S.err?esc(t("loadFail")):"Loading project…"}</div>`;return}
+ if(!S.BL){if(S.owner)vSetup(m);else m.innerHTML=`<div class="empty">${esc(t("noProject"))}</div>`;return}
+ ({site:vSite,overview:vOverview,weekly:vWeekly,approvals:vApprovals,photos:vPhotos,baseline:vBaseline}[S.view]||vSite)(m);
+}
+
+/* ---------- SITE ---------- */
+function areaStats(area,list,d){
+ const st=stateAt(d,list);let v=0,e=0,p=0;
+ for(const K of M.keys)if(K.area===area){v+=K.v;e+=K.v*(st[K.k]||0);p+=K.v*plannedFrac(K.act,d)}
+ return {a:v?e/v:0,p:v?p/v:0,n:M.keys.filter(K=>K.area===area).length};
+}
+function vSite(m){
+ const list=allEntries(),d=S.date;
+ const roNote=S.canWrite===false?`<p class="note">${esc(t("noWrite"))}</p>`:"";
+ if(!S.area){
+  const today=new Set(list.filter(e=>e.date===d).map(e=>e.area));
+  m.innerHTML=`<div class="row"><h1>${esc(t("pickArea"))}</h1></div>
+  <div class="row" style="margin-top:12px"><label class="row small muted">${esc(t("date"))} <input type="date" id="dPick" value="${esc(d)}" max="${localToday()}"></label></div>${roNote}
+  <div class="areas">${S.BL.areas.map(a=>{const s=areaStats(a.id,list,d);if(!s.n)return"";
+   return `<button class="area" type="button" data-area="${esc(a.id)}">${today.has(a.id)?`<span class="today" title="${esc(t("updatedToday"))}"></span>`:""}<b>${esc(nm(a))}</b>
+   <span class="pc">${pct(s.a)}</span><span class="meter plan"><span style="width:${s.a*100}%"></span><i class="pl" style="inset-inline-start:${s.p*100}%"></i></span></button>`}).join("")}</div>`;
+  return;
+ }
+ const area=M.areas[S.area],st=stateAt(d,list);
+ const its=S.BL.items.filter(i=>i.alloc&&i.alloc[S.area]);
+ const isNow=i=>i.stages.some(s=>{const a=M.acts[s.act];return a&&dn(a.s)<=dn(d)+7&&dn(a.e)>=dn(d)-7&&(st[`${i.id}|${S.area}|${s.id}`]||0)<1});
+ let shown=S.filter==="now"?its.filter(isNow):its;const fallback=S.filter==="now"&&!shown.length;if(fallback)shown=its;
+ const todays=list.filter(e=>e.area===S.area&&e.date===d).reverse();
+ m.innerHTML=`<div class="row"><button class="btn ghost sm" type="button" id="backBtn">${ICON.back} ${esc(t("back"))}</button><span class="muted small">${esc(fmtD(d))}</span></div>
+ <h1 style="margin-top:12px">${esc(nm(area))}</h1>${roNote}
+ <div class="row" style="margin-top:10px"><div class="chips"><button class="chip" type="button" data-f="now" aria-pressed="${S.filter==="now"}">${esc(t("now"))}</button><button class="chip" type="button" data-f="all" aria-pressed="${S.filter==="all"}">${esc(t("all"))}</button></div>
+ ${S.canWrite!==false?`<button class="btn ghost sm sp" type="button" id="areaPhoto">${ICON.cam} ${esc(t("areaPhoto"))}</button>`:""}</div>
+ ${fallback?`<p class="note">${esc(t("nothingNow"))}</p>`:""}${its.length?"":`<p class="empty">${esc(t("noItems"))}</p>`}
+ ${S.BL.trades.map(tr=>{const g=shown.filter(i=>i.trade===tr.id);if(!g.length)return"";
+  return `<div class="trade-h">${esc(nm(tr))}</div><div class="items">${g.map(i=>{const q=i.alloc[S.area];
+   return `<button class="item" type="button" data-item="${esc(i.id)}"><div class="hd"><b>${esc(nm(i))}</b><span class="q">${esc(num(q))} ${esc(U(i.unit))}</span></div>
+   ${i.stages.map(s=>{const f=st[`${i.id}|${S.area}|${s.id}`]||0;return `<div class="stg"><span>${esc(i.stages.length>1?nm(s):t("done"))}</span><span class="meter"><span style="width:${f*100}%"></span></span><span class="v">${pct(f)}</span></div>`}).join("")}</button>`}).join("")}</div>`}).join("")}
+ ${todays.length?`<section><h2>${esc(t("todayHere"))}</h2><div>${todays.map(e=>entryRow(e,true)).join("")}</div></section>`:""}`;
+}
+function entryText(e){
+ const it=M.items[e.item];if(e.kind==="photo"||!it)return t("photoOnly");
+ const K=M.kmap[`${e.item}|${e.area}|${e.stage}`],s=it.stages.find(x=>x.id===e.stage);
+ const stg=it.stages.length>1&&s?` · ${nm(s)}`:"";
+ const val=e.kind==="add"?`+${num(+e.val)} ${U(it.unit)}`:`→ ${pct(+e.val)}${K&&it.mode==="qty"?` (${num(K.q*e.val)} ${U(it.unit)})`:""}`;
+ return `${nm(it)}${stg} — ${val}`;
+}
+function photosOf(e){
+ const a=(e.photos||[]).filter(okId).map(id=>"/_blob/"+id);
+ const b=(e.localPhotos||[]).filter(u=>typeof u==="string"&&u.startsWith("data:image/"));
+ return a.concat(b.slice(a.length));
+}
+function entryRow(e,site){
+ const ph=photosOf(e);const mine=e.by===S.me;
+ const canDel=(S.owner||(mine&&e.status!=="approved"))&&e.status!=="pending";
+ return `<div class="ap"><div><div><b>${esc(entryText(e))}</b></div>
+ <div class="small muted">${site?"":esc(nm(M.areas[e.area]))+" · "}${esc(fmtD(e.date))} · ${esc(who(e.by))}${e.status==="pending"?` · <span class="neg">${esc(t("pending"))}</span>`:e.status==="approved"?' · <span class="pos">approved</span>':e.status==="adjusted"?' · adjusted':""}</div>
+ ${e.note?`<div class="small">${esc(e.note)}</div>`:""}${ph.length?`<div class="thumbs" style="margin-top:6px">${ph.map(u=>`<img src="${esc(u)}" alt="">`).join("")}</div>`:""}</div>
+ <div>${canDel?`<button class="btn ghost sm" type="button" data-del="${esc(e.id)}">${esc(t("del"))}</button>`:""}</div></div>`;
+}
+
+/* entry sheet */
+function openSheet(itemId,photoOnly){
+ const list=allEntries(),st=stateAt(S.date,list);
+ const it=photoOnly?null:M.items[itemId];const q=it?it.alloc[S.area]:0;
+ let stage=null;
+ if(it){const open=it.stages.filter(s=>(st[`${it.id}|${S.area}|${s.id}`]||0)<1);
+  stage=(open.find(s=>M.acts[s.act]&&dn(M.acts[s.act].s)<=dn(S.date))||open[0]||it.stages[0]).id}
+ const photos=[];let val=it&&it.mode==="pct"?null:0;
+ const L=$("#layer");
+ const draw=()=>{
+  const cur=it?(st[`${it.id}|${S.area}|${stage}`]||0):0;
+  if(it&&it.mode==="pct"&&val===null)val=Math.round(cur*100);
+  const after=it?(it.mode==="qty"?clamp(cur+(+val||0)/q):(val/100)):0;
+  const remain=it?Math.max(0,q*(1-cur)):0;
+  const steps=it?(it.unit==="no."?[1,2,5]:it.unit==="kg"?[10,25,50]:[1,5,10]):[];
+  L.innerHTML=`<div class="scrim" id="scrim"><form class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="${esc(it?nm(it):t("areaPhoto"))}">
+   <div><div class="small muted">${esc(nm(M.areas[S.area]))} · ${esc(fmtD(S.date))}</div><h2>${esc(it?nm(it):t("areaPhoto"))}</h2>
+   ${it?`<div class="small muted">BOQ ${esc(it.code)} · ${esc(num(q))} ${esc(U(it.unit))}</div>`:""}</div>
+   ${it&&it.stages.length>1?`<div><div class="small muted" style="margin-bottom:6px">${esc(t("stage"))}</div><div class="seg">${it.stages.map(s=>{const f=st[`${it.id}|${S.area}|${s.id}`]||0;return `<button type="button" data-stage="${esc(s.id)}" aria-pressed="${s.id===stage}">${esc(nm(s))}<br><span class="small">${pct(f)}</span></button>`}).join("")}</div></div>`:""}
+   ${it?`<div class="note">${esc(t("done"))}: <b>${esc(num(q*cur))} ${esc(t("of"))} ${esc(num(q))} ${esc(U(it.unit))}</b> (${pct(cur)})</div>`:""}
+   ${it&&it.mode==="qty"?`<label><div class="small muted" style="margin-bottom:6px">${esc(t("todayQty"))} (${esc(U(it.unit))})</div>
+     <input class="big" id="qty" type="number" inputmode="decimal" min="0" step="any" value="${val?esc(val):""}" placeholder="0"></label>
+     <div class="quick">${steps.map(s=>`<button class="btn ghost" type="button" data-add="${s}">+${s}</button>`).join("")}<button class="btn mint" type="button" data-add="rest">${esc(t("remaining"))}</button></div>`:""}
+   ${it&&it.mode==="pct"?`<label><div class="small muted">${esc(t("setPct"))}</div><div class="big" style="display:flex;align-items:center;justify-content:center;border-radius:10px">${val}%</div>
+     <input type="range" id="rng" min="0" max="100" step="5" value="${val}"></label>
+     <div class="quick">${[25,50,75,100].map(s=>`<button class="btn ghost" type="button" data-pct="${s}">${s}%</button>`).join("")}</div>`:""}
+   ${it?`<div class="after">${esc(t("after"))}: ${pct(after)}</div><span class="meter"><span style="width:${after*100}%"></span></span>`:""}
+   <label><div class="small muted" style="margin-bottom:6px">${esc(t("note"))}</div><textarea id="note" rows="2" style="width:100%" placeholder="${esc(t("notePh"))}"></textarea></label>
+   ${S.assets?`<div><label class="btn ghost" style="width:100%">${ICON.cam} ${esc(t("addPhotos"))}<input id="ph" type="file" accept="image/*" capture="environment" multiple hidden></label>
+     <div class="thumbs" style="margin-top:8px">${photos.map(u=>`<img src="${esc(u)}" alt="">`).join("")}</div></div>`:`<p class="small muted">${esc(t("noPhoto"))}</p>`}
+   <div class="row"><button class="btn ghost" type="button" id="cancel">${esc(t("cancel"))}</button><button class="btn pri sp" style="flex:1" type="submit" id="saveBtn">${esc(t("save"))}</button></div>
+  </form></div>`;
+  const nt=$("#note");nt.value=noteVal;nt.oninput=()=>noteVal=nt.value;
+  const qi=$("#qty");if(qi)qi.oninput=()=>{val=qi.value;const a=clamp(cur+(+val||0)/q);L.querySelector(".after").textContent=`${t("after")}: ${pct(a)}`;L.querySelector(".sheet>.meter>span").style.width=a*100+"%"};
+  const rg=$("#rng");if(rg)rg.oninput=()=>{val=+rg.value;draw()};
+  L.querySelectorAll("[data-stage]").forEach(b=>b.onclick=()=>{stage=b.dataset.stage;if(it.mode==="pct")val=null;draw()});
+  L.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{val=b.dataset.add==="rest"?+remain.toFixed(2):+((+val||0)+ +b.dataset.add).toFixed(2);draw()});
+  L.querySelectorAll("[data-pct]").forEach(b=>b.onclick=()=>{val=+b.dataset.pct;draw()});
+  const ph=$("#ph");if(ph)ph.onchange=async()=>{for(const f of ph.files){try{photos.push(await blobToUrl(await compress(f)))}catch(e){toast("Photo could not be read")}}draw()};
+  $("#cancel").onclick=close;$("#scrim").onclick=ev=>{if(ev.target.id==="scrim")close()};
+  $("#sheet").onsubmit=async ev=>{ev.preventDefault();
+   if(S.canWrite===false){toast(t("noWrite"));return}
+   let kind="photo",v=0;
+   if(it){if(it.mode==="qty"){v=Math.min(+val||0,remain);kind="add";if(!(v>0)&&!photos.length){toast(lang==="ar"?"أدخل الكمية":"Enter a quantity");return}if(!(v>0))kind="photo"}
+    else{v=clamp(val/100);kind="set";if(Math.abs(v-cur)<1e-9&&!photos.length&&!noteVal){toast(lang==="ar"?"غيّر النسبة":"Change the percentage");return}}}
+   else if(!photos.length){toast(lang==="ar"?"أضف صورة":"Add a photo");return}
+   $("#saveBtn").disabled=true;$("#saveBtn").textContent=t("saving");
+   const e={id:S.date.replace(/-/g,"")+"-"+uid(),project:S.pid,item:it?it.id:"",area:S.area,stage:it?stage:"",date:S.date,kind,val:kind==="photo"?0:+v.toFixed(4),
+    note:noteVal.trim().slice(0,500),by:S.me||"",at:new Date().toISOString(),status:"entered"};
+   close();await submitEntry(e,photos);
+  };
+ };
+ let noteVal="";
+ const close=()=>{L.innerHTML="";document.removeEventListener("keydown",esck)};
+ const esck=ev=>{if(ev.key==="Escape")close()};document.addEventListener("keydown",esck);
+ draw();
+}
+
+/* ---------- OVERVIEW ---------- */
+function curve(list,upto){
+ const pts=[];for(let w=1;w<=lastWeek();w++){const end=ds(Math.min(M.w0+7*w-1,M.e0));const a=agg(end,list).all;
+  let ev=null;if(end<=upto)ev=a.ev/a.bac;else if(weekOf(upto)===w)ev=agg(upto,list).all.ev/a.bac;
+  pts.push({w,end,pv:a.pv/a.bac,ev})}
+ return pts;
+}
+function drawCurve(svg,pts,mark){
+ const W=svg.clientWidth,H=svg.clientHeight;if(!W||!H)return;
+ const p={l:40,r:14,t:14,b:30},iw=W-p.l-p.r,ih=H-p.t-p.b,n=pts.length;
+ const x=i=>p.l+iw*(i)/(n-1||1),y=v=>p.t+ih*(1-v);
+ const pl=pts.map((q,i)=>`${x(i)},${y(q.pv)}`).join(" ");
+ const ev=pts.filter(q=>q.ev!==null);const al=ev.map((q,i)=>`${x(pts.indexOf(q))},${y(q.ev)}`).join(" ");
+ const area=ev.length?`M${x(0)},${y(0)} L${al.replace(/ /g," L")} L${x(pts.indexOf(ev.at(-1)))},${y(0)} Z`:"";
+ const small=W<520;
+ let g="";for(const v of [0,.25,.5,.75,1])g+=`<line x1="${p.l}" x2="${W-p.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${p.l-6}" y="${y(v)+4}" font-size="11" text-anchor="end" fill="var(--mute)">${v*100}%</text>`;
+ const step=small?4:2;pts.forEach((q,i)=>{if(i%step===0||i===n-1)g+=`<text x="${x(i)}" y="${H-8}" font-size="11" text-anchor="middle" fill="var(--mute)">W${q.w}</text>`});
+ const mi=mark?pts.findIndex(q=>q.w===mark):-1;
+ if(mi>=0)g+=`<rect x="${x(mi)-iw/(n-1)/2}" y="${p.t}" width="${iw/(n-1)}" height="${ih}" fill="var(--mint)" opacity=".35"/>`;
+ const last=ev.at(-1),li=last?pts.indexOf(last):-1;
+ svg.innerHTML=g+(area?`<path d="${area}" fill="var(--mint)" opacity=".55"/>`:"")+`<polyline points="${pl}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="6 4"/>`+
+  (al?`<polyline points="${al}" fill="none" stroke="var(--done)" stroke-width="3.5" stroke-linejoin="round"/>`:"")+
+  (last?`<circle cx="${x(li)}" cy="${y(last.ev)}" r="5" fill="var(--done)"/>`:"");
+}
+let ro=null;
+function mountCurve(pts,mark){const svg=$("#curve");if(!svg)return;if(ro)ro.disconnect();ro=new ResizeObserver(()=>drawCurve(svg,pts,mark));ro.observe(svg)}
+function tradeBars(d,list){
+ const by=agg(d,list,K=>K.it.trade);
+ return `<div class="tbars">${S.BL.trades.map(tr=>{const o=by[tr.id];if(!o||!o.bac)return"";const a=o.ev/o.bac,pl=o.pv/o.bac,g=a-pl;
+  return `<div class="tbar"><b>${esc(nm(tr))}</b><span class="meter plan" style="height:14px"><span style="width:${a*100}%"></span><i class="pl" style="inset-inline-start:${pl*100}%"></i></span>
+  <span class="v">${pct(a)} <span class="${g<-.005?"neg":"muted"}">/ ${pct(pl)}</span></span></div>`}).join("")}</div>
+  <p class="small muted">Bar = actual, black tick = planned. Weighted by BOQ value.</p>`;
+}
+function heat(d,list){
+ const st=stateAt(d,list),cell={};
+ for(const K of M.keys){const c=cell[K.area+"|"+K.it.trade]||(cell[K.area+"|"+K.it.trade]={v:0,e:0,p:0});c.v+=K.v;c.e+=K.v*(st[K.k]||0);c.p+=K.v*plannedFrac(K.act,d)}
+ return `<div class="scroll"><table class="heat"><thead><tr><th>Area</th>${S.BL.trades.map(tr=>`<th style="text-align:center">${esc(nm(tr))}</th>`).join("")}<th class="n">Value</th></tr></thead><tbody>
+ ${S.BL.areas.map(a=>{let tv=0;const tds=S.BL.trades.map(tr=>{const c=cell[a.id+"|"+tr.id];if(!c||!c.v)return`<td class="h muted">–</td>`;tv+=c.v;const f=c.e/c.v,pl=c.p/c.v;
+  return `<td class="h${f<pl-.1?" lag":""}" style="background:color-mix(in srgb,var(--done) ${Math.round(f*85)}%,transparent);${f>.55?"color:var(--bg)":""}" title="planned ${pct(pl)}">${pct(f)}</td>`}).join("");
+  return tv?`<tr><td>${esc(nm(a))}</td>${tds}<td class="n">${esc(money(tv))}</td></tr>`:""}).join("")}</tbody></table></div>
+ <p class="small muted">Cell = actual % of that trade's value in the area. Red dot = more than 10 points behind plan.</p>`;
+}
+function vOverview(m){
+ const list=allEntries(),d=localToday(),a=agg(d,list).all,act=a.ev/a.bac,pl=a.pv/a.bac,gap=act-pl,spi=a.pv?a.ev/a.pv:1;
+ const demo=S.entries.some(e=>e.demo);const last=list.filter(e=>e.status!=="pending").at(-1);
+ m.innerHTML=`<h1>${gap<-.005?`${Math.abs(gap*100).toFixed(1)} points behind schedule`:gap>.005?`${(gap*100).toFixed(1)} points ahead of schedule`:"On schedule"}</h1>
+ <p class="muted">${esc(nm(S.BL))} · as of ${esc(fmtD(d))} · week ${weekOf(d)} of ${lastWeek()}${S.BL.status==="draft"?" · draft schedule":""}</p>
+ ${demo?`<div class="note row" style="margin-top:10px"><span>The entries for 1–23 Nov are sample data so you can see the reports working.</span>${S.owner?`<button class="btn sm sp" type="button" id="clearDemo">Clear sample data</button>`:""}</div>`:""}
+ <div class="hero" style="margin-top:16px"><div class="num"><div><div class="small">Actual progress</div><div class="n">${pct(act,1)}</div><div class="vs">vs ${pct(pl,1)} planned</div></div>
+  <div class="small">${esc(money(a.ev))} earned of ${esc(money(a.bac))}</div></div>
+  <div><div class="legend"><span><i class="p"></i>Planned</span><span><i class="a"></i>Actual</span></div><div class="fig"><svg id="curve" role="img" aria-label="Planned versus actual progress by week"></svg></div></div></div>
+ <div class="kpis"><div class="kpi"><div class="n">${spi.toFixed(2)}</div><div class="l">Schedule index (1.00 = on plan)</div></div>
+  <div class="kpi"><div class="n ${gap<0?"neg":""}">${gap>=0?"+":""}${(gap*100).toFixed(1)}</div><div class="l">Points vs plan</div></div>
+  <div class="kpi"><div class="n">${S.entries.filter(e=>e.status==="entered").length}</div><div class="l">Entries awaiting approval</div></div>
+  <div class="kpi"><div class="n">${last?esc(fmtD(last.date)):"–"}</div><div class="l">Last site update</div></div></div>
+ <section><h2>By trade</h2>${tradeBars(d,list)}</section>
+ <section><h2>By area</h2>${heat(d,list)}</section>`;
+ mountCurve(curve(list,d),weekOf(d));
+}
+
+/* ---------- WEEKLY ---------- */
+function vWeekly(m){
+ const list=allEntries();if(!S.week)S.week=Math.max(1,Math.min(weekOf(localToday()),lastWeek()));
+ const w=S.week,[ws,we]=weekRange(w),prev=ds(dn(ws)-1),today=localToday(),end=we>today?today:we;
+ const A1=agg(end,list).all,A0=agg(prev,list).all,P1=agg(we,list).all;
+ const act=A1.ev/A1.bac,pl=P1.pv/P1.bac,gap=act-pl,dAct=(A1.ev-A0.ev)/A1.bac,dPl=(P1.pv-A0.pv)/A1.bac;
+ const byT1=agg(end,list,K=>K.it.trade),byT0=agg(prev,list,K=>K.it.trade),byTP=agg(we,list,K=>K.it.trade);
+ const byA1=agg(end,list,K=>K.area),byA0=agg(prev,list,K=>K.area),byAP=agg(we,list,K=>K.area);
+ const st=stateAt(end,list);const gaps={};
+ for(const K of M.keys){const pf=plannedFrac(K.act,we),af=st[K.k]||0;if(pf-af<=.001)continue;const g=gaps[K.it.id+"|"+K.st.id]||(gaps[K.it.id+"|"+K.st.id]={K,v:0,pv:0,ev:0,tot:0,areas:new Set()});
+  g.v+=K.v*(pf-af);g.tot+=K.v;g.pv+=K.v*pf;g.ev+=K.v*af;g.areas.add(K.area)}
+ const behind=Object.values(gaps).sort((a,b)=>b.v-a.v).slice(0,10);
+ const wk=list.filter(e=>e.date>=ws&&e.date<=we);const ph=wk.flatMap(e=>photosOf(e).map(u=>({u,e})));
+ const actsW=S.BL.acts.filter(a=>a.s<=we&&a.e>=ws);
+ const row=(name,o1,o0,oP)=>{if(!o1||!o1.bac)return"";const a=o1.ev/o1.bac,p=oP.pv/oP.bac,da=(o1.ev-(o0?.ev||0))/o1.bac,dp=(oP.pv-(o0?.pv||0))/o1.bac;
+  return `<tr><td>${esc(name)}</td><td class="n">${pct(p,1)}</td><td class="n">${pct(a,1)}</td><td class="n ${a-p<-.005?"neg":""}">${((a-p)*100).toFixed(1)}</td><td class="n">${pct(dp,1)}</td><td class="n">${pct(da,1)}</td></tr>`};
+ const head=`<thead><tr><th></th><th class="n">Planned to date</th><th class="n">Actual to date</th><th class="n">Gap (pts)</th><th class="n">Planned this week</th><th class="n">Done this week</th></tr></thead>`;
+ const summary=`${nm(S.BL)} — Week ${w} (${fmtD(ws)}–${fmtD(we)})\nProgress: ${pct(act,1)} actual vs ${pct(pl,1)} planned (${gap>=0?"+":""}${(gap*100).toFixed(1)} pts).\nThis week: ${pct(dAct,1)} achieved vs ${pct(dPl,1)} planned.\n`+
+  S.BL.trades.map(tr=>{const o=byT1[tr.id],p=byTP[tr.id];return o?`- ${tr.en}: ${pct(o.ev/o.bac)} (plan ${pct(p.pv/p.bac)})`:""}).filter(Boolean).join("\n")+
+  (behind.length?`\nMain delays:\n`+behind.slice(0,5).map(b=>`- ${b.K.it.en}${b.K.it.stages.length>1?" ("+b.K.st.en+")":""}: ${pct(b.ev/b.tot)} done vs ${pct(b.pv/b.tot)} planned (${money(b.v)} behind)`).join("\n"):"");
+ m.innerHTML=`<div class="row"><button class="btn ghost sm" type="button" id="wPrev" ${w<=1?"disabled":""} aria-label="Previous week">‹</button>
+  <b>Week ${w} · ${esc(fmtD(ws))} – ${esc(fmtD(we))}</b><button class="btn ghost sm" type="button" id="wNext" ${w>=lastWeek()?"disabled":""} aria-label="Next week">›</button>
+  <button class="btn sm sp" type="button" id="copySum">Copy summary</button></div>
+ <h1 style="margin-top:14px">${pct(act,1)} complete against ${pct(pl,1)} planned${we>today?" (week in progress)":""}</h1>
+ <p class="muted">${gap<-.005?`${Math.abs(gap*100).toFixed(1)} points behind.`:gap>.005?`${(gap*100).toFixed(1)} points ahead.`:"On plan."} This week the site achieved ${pct(dAct,1)} of the project against ${pct(dPl,1)} planned, across ${wk.filter(e=>e.kind!=="photo").length} progress entries in ${new Set(wk.map(e=>e.area)).size} areas.</p>
+ <div class="card" style="margin-top:14px;padding:0"><div class="legend"><span><i class="p"></i>Planned</span><span><i class="a"></i>Actual</span><span>Shaded = this week</span></div><div class="fig" style="min-height:260px"><svg id="curve" role="img" aria-label="S-curve"></svg></div></div>
+ <section><h2>By trade</h2><div class="scroll"><table class="stack">${head}<tbody>${S.BL.trades.map(tr=>row(nm(tr),byT1[tr.id],byT0[tr.id],byTP[tr.id])).join("")}</tbody></table></div></section>
+ <section><h2>Biggest delays at week end</h2>${behind.length?`<div class="scroll"><table class="stack"><thead><tr><th>Item</th><th>Areas</th><th class="n">Planned</th><th class="n">Actual</th><th class="n">Value behind</th></tr></thead><tbody>
+  ${behind.map(b=>`<tr><td>${esc(nm(b.K.it))}${b.K.it.stages.length>1?` <span class="muted">· ${esc(nm(b.K.st))}</span>`:""}</td><td>${esc([...b.areas].map(x=>nm(M.areas[x])).join(", "))}</td><td class="n">${pct(b.pv/b.tot)}</td><td class="n">${pct(b.ev/b.tot)}</td><td class="n neg">${esc(money(b.v))}</td></tr>`).join("")}</tbody></table></div>
+  <p class="small muted">Planned and actual are shares of that item's value in the listed areas.</p>`:`<p class="muted">Nothing behind plan.</p>`}</section>
+ <section><h2>Activities this week</h2><div class="scroll"><table class="stack"><thead><tr><th>Activity</th><th>Dates</th><th class="n">Planned</th><th class="n">Actual</th></tr></thead><tbody>
+  ${actsW.map(a=>{let v=0,e=0;for(const K of M.keys)if(K.st.act===a.id){v+=K.v;e+=K.v*(st[K.k]||0)}const p=plannedFrac(a,we),f=v?e/v:0;
+   return `<tr><td>${esc(nm(a))}</td><td>${esc(fmtD(a.s))} – ${esc(fmtD(a.e))}</td><td class="n">${pct(p)}</td><td class="n ${f<p-.05?"neg":""}">${v?pct(f):"–"}</td></tr>`}).join("")}</tbody></table></div></section>
+ <section><h2>By area</h2><div class="scroll"><table class="stack">${head}<tbody>${S.BL.areas.map(a=>row(nm(a),byA1[a.id],byA0[a.id],byAP[a.id])).join("")}</tbody></table></div></section>
+ <section><h2>Photos this week</h2>${ph.length?`<div class="gallery">${ph.map(({u,e})=>`<figure><img src="${esc(u)}" alt="" loading="lazy"><figcaption>${esc(nm(M.areas[e.area]))} · ${esc(fmtD(e.date))}</figcaption></figure>`).join("")}</div>`:`<p class="muted">No photos this week.</p>`}</section>`;
+ m.dataset.summary=summary;
+ mountCurve(curve(list,today),w);
+}
+
+/* ---------- APPROVALS ---------- */
+function vApprovals(m){
+ const list=allEntries().filter(e=>e.status!=="pending");
+ const shown=(S.apFilter==="pending"?list.filter(e=>e.status==="entered"):list).slice().reverse().slice(0,300);
+ const dates=[...new Set(shown.map(e=>e.date))];
+ m.innerHTML=`<h1>${list.filter(e=>e.status==="entered").length} entries to review</h1>
+ <p class="muted">Entries count toward progress as soon as they're saved. Approve what you've checked; Adjust records the quantity you verified on site (it replaces the running total for that item from today).</p>
+ <div class="row" style="margin-top:10px"><div class="chips"><button class="chip" type="button" data-apf="pending" aria-pressed="${S.apFilter==="pending"}">To review</button><button class="chip" type="button" data-apf="all" aria-pressed="${S.apFilter==="all"}">All entries</button></div></div>
+ ${dates.length?dates.map(d=>{const g=shown.filter(e=>e.date===d);const pend=g.filter(e=>e.status==="entered").length;
+  return `<section><div class="row"><h2>${esc(fmtD(d))}</h2>${pend&&S.owner?`<button class="btn sm sp" type="button" data-apday="${esc(d)}">Approve all ${pend}</button>`:""}</div>
+  ${g.map(e=>`<div class="ap"><div><b>${esc(entryText(e))}</b><div class="small muted">${esc(nm(M.areas[e.area]))} · ${esc(who(e.by))} · ${esc(e.status)}</div>
+   ${e.note?`<div class="small">${esc(e.note)}</div>`:""}${photosOf(e).length?`<div class="thumbs" style="margin-top:6px">${photosOf(e).map(u=>`<img src="${esc(u)}" alt="">`).join("")}</div>`:""}
+   <div class="adj" data-adjbox="${esc(e.id)}" hidden></div></div>
+   <div class="row" style="align-content:flex-start">${S.owner&&e.status==="entered"?`<button class="btn mint sm" type="button" data-ok="${esc(e.id)}">Approve</button>`:""}
+   ${S.owner&&e.kind!=="photo"&&M.items[e.item]?`<button class="btn ghost sm" type="button" data-adj="${esc(e.id)}">Adjust</button>`:""}${S.owner?`<button class="btn ghost sm" type="button" data-del="${esc(e.id)}">Delete</button>`:""}</div></div>`).join("")}</section>`}).join(""):`<p class="empty">Nothing waiting for review.</p>`}`;
+}
+function openAdjust(id){
+ const e=allEntries().find(x=>x.id===id);if(!e)return;const box=document.querySelector(`[data-adjbox="${CSS.escape(id)}"]`);const it=M.items[e.item],K=M.kmap[`${e.item}|${e.area}|${e.stage}`];
+ const cur=stateAt(localToday(),allEntries())[K.k]||0;box.hidden=false;
+ box.innerHTML=`<form class="row" style="margin-top:8px"><label class="small">Verified done to date ${it.mode==="qty"?`(${esc(U(it.unit))}, of ${esc(num(K.q))})`:"(%)"}
+  <input type="number" step="any" min="0" name="v" value="${it.mode==="qty"?+(K.q*cur).toFixed(2):Math.round(cur*100)}" style="width:9em;margin-inline-start:6px"></label>
+  <button class="btn pri sm" type="submit">Save adjustment</button></form>`;
+ box.querySelector("form").onsubmit=async ev=>{ev.preventDefault();const raw=+ev.target.v.value;if(!(raw>=0))return;
+  const f=clamp(it.mode==="qty"?raw/K.q:raw/100);
+  const n={id:localToday().replace(/-/g,"")+"-"+uid(),project:S.pid,item:e.item,area:e.area,stage:e.stage,date:localToday(),kind:"set",val:+f.toFixed(4),
+   note:"Adjusted by manager on site",by:S.me||"",at:new Date().toISOString(),status:"approved"};
+  try{await S.db.collection("entries").doc(n.id).set(n);if(e.status==="entered")await setStatus(e,"adjusted");toast("Adjustment saved")}catch(err){toast("Could not save: "+(err?.code||"error"))}};
+}
+
+/* ---------- PHOTOS ---------- */
+function vPhotos(m){
+ const list=allEntries().slice().reverse();const ph=list.filter(e=>!S.phArea||e.area===S.phArea).flatMap(e=>photosOf(e).map(u=>({u,e})));
+ m.innerHTML=`<div class="row"><h1>Photos</h1><select id="phArea" class="sp" aria-label="Area"><option value="">All areas</option>${S.BL.areas.map(a=>`<option value="${esc(a.id)}"${S.phArea===a.id?" selected":""}>${esc(nm(a))}</option>`).join("")}</select></div>
+ ${ph.length?`<div class="gallery" style="margin-top:14px">${ph.map(({u,e})=>`<figure><img src="${esc(u)}" alt="" loading="lazy"><figcaption>${esc(nm(M.areas[e.area]))} · ${esc(fmtD(e.date))}<br>${esc(e.kind==="photo"?"":nm(M.items[e.item]))}</figcaption></figure>`).join("")}</div>`:`<p class="empty">No photos yet. Photos taken with site entries appear here, tagged by area, item and date.</p>`}`;
+}
+
+/* ---------- BASELINE ---------- */
+function vBaseline(m){
+ const d=localToday();const span=M.e0-M.s0+1;
+ m.innerHTML=`<h1>Baseline: BOQ, areas and schedule</h1>
+ <p class="muted">${esc(nm(S.BL))} · ${esc(S.BL.location||"")} · ${S.BL.items.length} tracked BOQ lines · ${esc(money(M.bac))} · ${esc(fmtD(S.BL.start))} → ${esc(fmtD(S.BL.end))}</p>
+ <p class="note">The split of each BOQ quantity across areas is a proposal taken from the drawings. Review it and tell Claude what to change; the schedule is a draft too.${(S.BL.notTracked||[]).map(x=>`<br>Not tracked: ${esc(x)}`).join("")}
+ ${S.owner&&BUNDLES.some(x=>x.id===S.pid)?`<br><button class="btn sm" type="button" id="reimport" style="margin-top:8px">Load latest baseline file</button> <span class="small muted">(revision ${esc(S.BL.rev||1)}; site entries are kept)</span>`:""}</p>
+ ${S.owner?`<section><h2>Room finish schedule</h2><p class="muted">Fill in each area's size and the finish of its floor, skirting, walls and ceiling in Excel. Importing it re-splits the BOQ quantities between areas by measured takeoff.${S.BL.finishSchedule?` Last imported with ${S.BL.finishSchedule.rooms.length} areas.`:""}</p>
+  <div class="row"><button class="btn" type="button" id="fsDl">Download Excel schedule</button><label class="btn pri">Import filled schedule<input id="fsFile" type="file" accept=".xlsx" hidden></label></div></section>`:""}
+ <section><h2>Schedule</h2><div class="gantt">${S.BL.acts.map(a=>{const s=(dn(a.s)-M.s0)/span*100,w=(dn(a.e)-dn(a.s)+1)/span*100,n=(dn(d)-M.s0)/span*100;
+  return `<div class="gr"><span>${esc(nm(a))} <span class="muted">· ${esc(nm(M.trades[a.trade]))}</span></span><span class="gtrack"><span style="inset-inline-start:${s}%;width:${w}%"></span>${n>=0&&n<=100?`<i class="now" style="inset-inline-start:${n}%"></i>`:""}</span></div>`}).join("")}</div>
+  <p class="small muted">Red line = today.</p></section>
+ ${S.BL.trades.map(tr=>{const its=S.BL.items.filter(i=>i.trade===tr.id);const tot=its.reduce((s,i)=>s+i.qty*i.rate,0);
+  return `<section><details${tr.id==="F"?" open":""}><summary>${esc(nm(tr))} · ${its.length} items · ${esc(money(tot))}</summary><div class="scroll"><table class="stack"><thead><tr><th>Code</th><th>Item</th><th class="n">Qty</th><th class="n">Rate</th><th class="n">Total</th><th>Tracked as</th><th>Areas</th></tr></thead><tbody>
+  ${its.map(i=>`<tr><td>${esc(i.code)}</td><td>${esc(i.en)}<div class="small muted" lang="ar" dir="rtl">${esc(i.ar)}</div>${i.note?`<div class="small neg">${esc(i.note)}</div>`:""}</td><td class="n">${esc(num(i.qty))} ${esc(U(i.unit))}</td><td class="n">${esc(num(i.rate))}</td><td class="n">${esc(money(i.qty*i.rate))}</td>
+   <td class="small">${i.mode==="qty"?"Quantity":"Percent"}${i.stages.length>1?"<br>"+i.stages.map(s=>`${esc(s.en)} ${s.w}%`).join(" · "):""}</td>
+   <td class="small">${Object.entries(i.alloc).map(([a,q])=>`${esc(nm(M.areas[a]))} ${esc(num(q))}`).join(" · ")}</td></tr>`).join("")}</tbody></table></div></details></section>`}).join("")}`;
+}
+
+/* ---------- SETUP (import a baseline file shipped with the app) ---------- */
+const BUNDLES=[{id:"wg5",file:"baseline-wg5.json",sample:"sample-wg5.json",en:"West Golf – Apartment 5",note:"77 BOQ lines · 17 areas · draft schedule 1 Nov 2026 – 27 Feb 2027"}];
+function vSetup(m){
+ m.innerHTML=`<h1>Set up your first project</h1><p class="muted">Load the baseline prepared from your BOQ and drawings. You can clear the sample entries at any time.</p>
+ ${BUNDLES.map(b=>`<div class="card" style="margin-top:14px"><h2>${esc(b.en)}</h2><p class="muted small">${esc(b.note)}</p>
+  <label class="row small" style="margin:8px 0"><input type="checkbox" id="withSample" checked style="width:22px;height:22px"> Include sample site entries for 1–23 Nov (to see the reports working)</label>
+  <button class="btn pri" type="button" data-import="${esc(b.id)}">Load project</button> <span id="impMsg" class="small muted"></span></div>`).join("")}`;
+}
+async function importBundle(id,withSample,btn){
+ const b=BUNDLES.find(x=>x.id===id);const msg=$("#impMsg")||{};btn.disabled=true;
+ try{
+  const bl=await (await fetch(b.file)).json();
+  if(withSample){const list=await (await fetch(b.sample)).json();
+   for(let i=0;i<list.length;i++){const e=list[i];let tries=0;
+    while(true){try{await S.db.collection("entries").doc("demo"+String(i).padStart(4,"0")).set(e);break}catch(err){if(++tries>4)throw err;await new Promise(r=>setTimeout(r,1500*tries))}}
+    if(i%5===0&&msg)msg.textContent=`Loading sample entries… ${i+1}/${list.length}`}}
+  await S.db.doc("projects/"+bl.id).set(bl);
+  toast("Project loaded");
+ }catch(err){btn.disabled=false;if(msg)msg.textContent="Could not load: "+(err?.code||err?.message||"error")+". Try again."}
+}
+async function reimport(btn){
+ const b=BUNDLES.find(x=>x.id===S.pid);if(!b)return;btn.disabled=true;
+ try{const bl=await (await fetch(b.file)).json();await S.db.doc("projects/"+bl.id).set(bl);toast("Baseline updated")}catch(err){toast("Could not update: "+(err?.code||"error"))}btn.disabled=false;
+}
+
+/* ---------- FINISH SCHEDULE (Excel) — JS port of tools/finish_schedule.py ---------- */
+const FS_KEYS=["id","en","ar","type","len","wid","area_ov","per_ov","h","open","doors","floor","skirt","wall1","wall1h","wall2","ceil","cpaint","sc7","sc25","wp","showers","notes"];
+const FS_BASES=["floor","skirting","wall","ceiling","ceiling-paint","screed7","screed25","wp-floor","wp-upturn","wp-shower"];
+let xlsxLib=null;
+function loadXlsx(){return xlsxLib||(xlsxLib=new Promise((res,rej)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";s.onload=()=>res(window.XLSX);s.onerror=()=>{xlsxLib=null;rej(new Error("Could not load the Excel reader"))};document.head.append(s)}))}
+const fnum=v=>v===null||v===undefined||v===""||isNaN(+v)?null:+v;
+const fstr=v=>v===null||v===undefined?"":String(v).trim();
+function fsRead(wb){
+ const need=["Rooms","Finish codes","Other items"];for(const n of need)if(!wb.Sheets[n])throw new Error(`Sheet "${n}" is missing — use the template from this app`);
+ const X=window.XLSX,rows=n=>X.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null,blankrows:true});
+ const R=rows("Rooms"),rooms=[];
+ for(let i=5;i<R.length;i++){const row=R[i]||[];const r={};FS_KEYS.forEach((k,j)=>r[k]=row[j]);r.id=fstr(r.id);if(!r.id||/^(totals|example)$/i.test(r.id))continue;
+  for(const k of ["floor","skirt","wall1","wall2","ceil","wp","cpaint","sc7","sc25","type","en","ar"])r[k]=fstr(r[k]);rooms.push(r)}
+ const fc=wb.Sheets["Finish codes"],F=rows("Finish codes");
+ const params={upturn:fnum(fc.C3?.v)??0.3,shower:fnum(fc.C4?.v)??0};
+ const codes=[];for(let i=7;i<F.length;i++){const [code,basis,desc,loc,boq]=F[i]||[];if(fstr(code)&&fstr(basis))codes.push({code:fstr(code),basis:fstr(basis),desc:fstr(desc),loc:fstr(loc),boq:fstr(boq)||null})}
+ const O=rows("Other items"),hdr=(O[3]||[]).map(fstr),ti=hdr.indexOf("Total");if(ti<0)throw new Error('"Other items" sheet has no Total column');
+ const acols=[];for(let j=5;j<ti;j++)if(hdr[j])acols.push([j,hdr[j]]);
+ const other={};for(let i=4;i<O.length;i++){const row=O[i]||[];const id=fstr(row[0]);if(!id)continue;const al={};for(const [j,a] of acols){const v=fnum(row[j]);if(v)al[a]=v}other[id]=al}
+ return {rooms,codes,params,other};
+}
+function fsMetrics(r,p){
+ const ln=fnum(r.len),wd=fnum(r.wid),aov=fnum(r.area_ov),pov=fnum(r.per_ov),h=fnum(r.h)||0;
+ const area=aov!==null?aov:(ln||0)*(wd||0),per=pov!==null?pov:2*((ln||0)+(wd||0));
+ const opn=fnum(r.open)||0,doors=fnum(r.doors)||0,w1h=fnum(r.wall1h),h1=w1h===null?h:Math.min(w1h,h);
+ return {area,per,skirt:r.skirt?Math.max(0,per-doors):0,w1:r.wall1?Math.max(0,per*h1-opn):0,w2:r.wall2?per*Math.max(0,h-h1):0,
+  ceil:r.ceil?area:0,up:r.wp.toUpperCase()==="WPF"?per*p.upturn:0,sh:(fnum(r.showers)||0)*p.shower};
+}
+function fsTake(r,m,code,basis){
+ const g=k=>String(r[k]||"").toUpperCase(),c=code.toUpperCase();
+ switch(basis){case"floor":return g("floor")===c?m.area:0;case"skirting":return g("skirt")===c?m.skirt:0;
+  case"wall":return (g("wall1")===c?m.w1:0)+(g("wall2")===c?m.w2:0);case"ceiling":return g("ceil")===c?m.ceil:0;
+  case"ceiling-paint":return g("cpaint")==="Y"?m.ceil:0;case"screed7":return g("sc7")==="Y"?m.area:0;case"screed25":return g("sc25")==="Y"?m.area:0;
+  case"wp-floor":return g("wp")===c?m.area:0;case"wp-upturn":return m.up;case"wp-shower":return m.sh}return 0;
+}
+function fsApply(baseline,P){
+ const b=JSON.parse(JSON.stringify(baseline)),items={};b.items.forEach(i=>items[i.id]=i);
+ const rep={errors:[],warnings:[],finish:[],other:0};const ids=P.rooms.map(r=>r.id);
+ const dup=[...new Set(ids.filter((x,i)=>ids.indexOf(x)!==i))];if(dup.length)rep.errors.push("Duplicate Area IDs: "+dup.join(", "));
+ for(const id of ids)if(!/^[A-Za-z0-9_-]{1,24}$/.test(id))rep.errors.push(`Area ID "${id}" — use letters, digits, - or _ only`);
+ const known=new Set(P.codes.map(c=>c.code.toUpperCase()));
+ for(const r of P.rooms)for(const [k,l] of [["floor","Floor"],["skirt","Skirting"],["wall1","Wall 1"],["wall2","Wall 2"],["ceil","Ceiling"]]){const v=String(r[k]||"").toUpperCase();if(v&&v!=="-"&&v!=="–"&&!known.has(v))rep.warnings.push(`${r.id}: ${l} code "${v}" is not in Finish codes — ignored`)}
+ const M2={};P.rooms.forEach(r=>M2[r.id]=fsMetrics(r,P.params));
+ const by={};
+ for(const cd of P.codes){if(!cd.boq)continue;if(!items[cd.boq]){rep.warnings.push(`Code ${cd.code}: BOQ line "${cd.boq}" not found`);continue}
+  if(!FS_BASES.includes(cd.basis)){rep.errors.push(`Code ${cd.code}: unknown basis "${cd.basis}"`);continue}
+  const t=by[cd.boq]||(by[cd.boq]={});for(const r of P.rooms){const v=fsTake(r,M2[r.id],cd.code,cd.basis);if(v>0)t[r.id]=(t[r.id]||0)+v}}
+ for(const [iid,t] of Object.entries(by)){const it=items[iid],tot=Object.values(t).reduce((a,b)=>a+b,0);
+  if(tot<=0){rep.warnings.push(`${iid} ${it.en}: no area uses its finish code — split left unchanged`);continue}
+  const al={};for(const [a,v] of Object.entries(t))al[a]=Math.round(it.qty*v/tot*100)/100;
+  const k=Object.keys(al).reduce((x,y)=>al[x]>=al[y]?x:y);al[k]=Math.round((al[k]+it.qty-Object.values(al).reduce((a,b)=>a+b,0))*100)/100;
+  rep.finish.push({id:iid,en:it.en,unit:it.unit,boq:it.qty,take:tot,diff:it.qty?(tot-it.qty)/it.qty:0,n:Object.keys(al).length});it.alloc=al}
+ for(const [iid,al] of Object.entries(P.other)){if(by[iid])continue;if(!items[iid]){rep.warnings.push(`Other items: "${iid}" not in BOQ — ignored`);continue}
+  const it=items[iid],tot=Object.values(al).reduce((a,b)=>a+b,0);if(!Object.keys(al).length){rep.warnings.push(`${iid} ${it.en}: no areas given — split left unchanged`);continue}
+  if(Math.abs(tot-it.qty)>0.01)rep.warnings.push(`${iid} ${it.en}: areas add up to ${num(tot)} but BOQ is ${num(it.qty)}`);it.alloc=al;rep.other++}
+ const old={};b.areas.forEach(a=>old[a.id]=a);const kind={room:"dry",wet:"wet",terrace:"ter"};
+ const areas=P.rooms.map(r=>({id:r.id,en:r.en||r.id,ar:r.ar||r.en||r.id,kind:kind[r.type.toLowerCase()]||old[r.id]?.kind||"dry"}));
+ const used=new Set(b.items.flatMap(i=>Object.keys(i.alloc||{})));
+ for(const a of ["GEN",...Object.keys(old)])if((used.has(a)||a==="GEN")&&!areas.some(x=>x.id===a))areas.push(old[a]||{id:a,en:a,ar:a,kind:"gen"});
+ const miss=[...used].filter(a=>!areas.some(x=>x.id===a));if(miss.length)rep.errors.push("Area IDs used in Other items but not in Rooms: "+miss.join(", "));
+ b.areas=areas;b.finishSchedule={rooms:P.rooms.map(r=>({...r})),codes:P.codes,params:P.params};b.rev=(+b.rev||1)+1;
+ const keys=new Set();b.items.forEach(i=>Object.keys(i.alloc||{}).forEach(a=>i.stages.forEach(s=>keys.add(`${i.id}|${a}|${s.id}`))));
+ const orphan=S.entries.filter(e=>e.item&&!keys.has(`${e.item}|${e.area}|${e.stage}`)).length;
+ if(orphan)rep.warnings.push(`${orphan} existing site entries are for an item/area combination that no longer exists — they will stop counting`);
+ return {b,rep};
+}
+async function fsDownload(btn){
+ const dl=await claude.use("downloads");if(!dl){toast("Downloads aren't available here");return}
+ const f=`finish-schedule-${S.pid}.json`;btn.disabled=true;
+ try{const r=await fetch(f);if(!r.ok)throw new Error("No template has been prepared for this project yet — ask Claude to make one");
+  const j=await r.json();const bin=atob(j.b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+  await dl.save({filename:`${S.BL.en} - finish schedule.xlsx`.replace(/[\\/:*?"<>|–]/g,"-"),data:u8})}
+ catch(e){if(e?.code!=="declined")toast(e?.message||("Download failed: "+(e?.code||"error")))}btn.disabled=false;
+}
+async function fsImport(file){
+ const L=$("#layer");
+ try{const X=await loadXlsx();const wb=X.read(await file.arrayBuffer(),{type:"array"});const P=fsRead(wb);const {b,rep}=fsApply(S.BL,P);
+  L.innerHTML=`<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="Import preview" style="width:min(820px,100%)">
+  <h2>Import finish schedule — preview</h2><p class="muted small">${esc(file.name)} · ${P.rooms.length} areas · ${rep.finish.length} finish lines re-split by measured takeoff · ${rep.other} other lines as typed</p>
+  ${rep.errors.length?`<div class="note" style="background:var(--red-soft);color:var(--red)"><b>Fix these in the Excel file first:</b><br>${rep.errors.map(esc).join("<br>")}</div>`:""}
+  ${rep.warnings.length?`<details${rep.errors.length?"":" open"}><summary>${rep.warnings.length} warning${rep.warnings.length>1?"s":""}</summary><div class="small">${rep.warnings.map(esc).join("<br>")}</div></details>`:""}
+  <div class="scroll"><table class="stack"><thead><tr><th>BOQ line</th><th class="n">BOQ qty</th><th class="n">Measured</th><th class="n">Diff</th><th class="n">Areas</th></tr></thead><tbody>
+  ${rep.finish.map(f=>`<tr><td>${esc(f.id)} ${esc(f.en)}</td><td class="n">${esc(num(f.boq))} ${esc(f.unit)}</td><td class="n">${esc(num(f.take))}</td><td class="n ${Math.abs(f.diff)>.1?"neg":""}">${f.diff>=0?"+":""}${(f.diff*100).toFixed(1)}%</td><td class="n">${f.n}</td></tr>`).join("")}</tbody></table></div>
+  <p class="small muted">BOQ quantities stay the same; only how they're split between areas changes. A difference over 10% means the drawings and the BOQ disagree.</p>
+  <div class="row"><button class="btn ghost" type="button" id="fsCancel">Cancel</button><button class="btn pri sp" type="button" id="fsApply" ${rep.errors.length?"disabled":""}>Apply to project</button></div></div></div>`;
+  $("#fsCancel").onclick=()=>L.innerHTML="";
+  $("#fsApply").onclick=async ev=>{ev.target.disabled=true;ev.target.textContent="Saving…";try{await S.db.doc("projects/"+S.pid).set(b);L.innerHTML="";toast("Area split updated")}catch(e){ev.target.disabled=false;ev.target.textContent="Apply to project";toast("Could not save: "+(e?.code||"error"))}};
+ }catch(e){toast(e?.message||"Could not read that file")}
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click",async ev=>{
+ const b=ev.target.closest("button,[data-area]");if(!b)return;
+ if(b.id==="langBtn"){lang=lang==="ar"?"en":"ar";try{localStorage.setItem("sp-lang",lang)}catch(e){}render();return}
+ if(b.dataset.view){S.view=b.dataset.view;if(S.view!=="site")S.area=null;render();scrollTo(0,0);return}
+ if(b.dataset.area){S.area=b.dataset.area;S.filter="now";render();scrollTo(0,0);return}
+ if(b.id==="backBtn"){S.area=null;render();return}
+ if(b.dataset.f){S.filter=b.dataset.f;render();return}
+ if(b.dataset.item){openSheet(b.dataset.item);return}
+ if(b.id==="areaPhoto"){openSheet(null,true);return}
+ if(b.dataset.apf){S.apFilter=b.dataset.apf;render();return}
+ if(b.id==="wPrev"){S.week--;render();return}if(b.id==="wNext"){S.week++;render();return}
+ if(b.id==="copySum"){try{await navigator.clipboard.writeText($("#main").dataset.summary||"");toast("Summary copied — paste it into WhatsApp or email")}catch(e){toast("Copy was blocked by the browser")}return}
+ if(b.dataset.ok){const e=S.entries.find(x=>x.id===b.dataset.ok);if(e){b.disabled=true;await setStatus(e,"approved")}return}
+ if(b.dataset.apday){b.disabled=true;const g=S.entries.filter(e=>e.date===b.dataset.apday&&e.status==="entered");for(const e of g)await setStatus(e,"approved");toast(`Approved ${g.length}`);return}
+ if(b.dataset.adj){openAdjust(b.dataset.adj);return}
+ if(b.dataset.del){const id=b.dataset.del;if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent=lang==="ar"?"تأكيد الحذف":"Tap again to delete";setTimeout(()=>{if(b.isConnected){b.dataset.armed="";b.textContent=t("del")}},3000);return}
+  try{await S.db.collection("entries").doc(id).delete();toast(lang==="ar"?"تم الحذف":"Deleted")}catch(e){toast("Could not delete: "+(e?.code||"error"))}return}
+ if(b.dataset.import){importBundle(b.dataset.import,$("#withSample")?.checked,b);return}
+ if(b.id==="reimport"){reimport(b);return}
+ if(b.id==="fsDl"){fsDownload(b);return}
+ if(b.id==="clearDemo"){if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Tap again to delete all sample entries";return}
+  b.disabled=true;const g=S.entries.filter(e=>e.demo);let n=0;for(const e of g){try{await S.db.collection("entries").doc(e.id).delete();n++;if(n%10===0)b.textContent=`Clearing… ${n}/${g.length}`}catch(err){if(err?.code==="resource_exhausted")await new Promise(r=>setTimeout(r,1500))}}
+  toast(`Cleared ${n} sample entries`);return}
+});
+document.addEventListener("change",ev=>{
+ if(ev.target.id==="dPick"){S.date=ev.target.value||localToday();render()}
+ if(ev.target.id==="projSel"){S.pid=ev.target.value;try{localStorage.setItem("sp-proj",S.pid)}catch(e){}S.BL=S.projects.find(p=>p.id===S.pid);M=buildModel(S.BL);S.area=null;subEntries();render()}
+ if(ev.target.id==="phArea"){S.phArea=ev.target.value;render()}
+ if(ev.target.id==="fsFile"&&ev.target.files[0]){const f=ev.target.files[0];ev.target.value="";fsImport(f)}
+});
+}
+</script>
+</body>
+</html>
