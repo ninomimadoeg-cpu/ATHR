@@ -1,0 +1,35 @@
+name: Deploy database
+# Applies supabase/migrations to the owner's Supabase project when they reach main (after CI tests pass on the PR).
+# Needs two repository secrets (Settings → Secrets and variables → Actions), added by the owner:
+#   SUPABASE_ACCESS_TOKEN  — Supabase → Account → Access Tokens
+#   SUPABASE_DB_PASSWORD   — the database password chosen when the project was created
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/migrations/**"]
+  workflow_dispatch:
+
+concurrency: deploy-db
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: orbmaaqrkrnfvzygipjd
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check secrets are set
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "::error::Add SUPABASE_ACCESS_TOKEN and SUPABASE_DB_PASSWORD in Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+      - name: Show what will be applied
+        run: supabase migration list --password "$SUPABASE_DB_PASSWORD"
+      - run: supabase db push --password "$SUPABASE_DB_PASSWORD"
