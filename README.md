@@ -1,4 +1,6 @@
-# Site Progress — handoff kit
+# ATHR — Site Progress
+
+ATHR PM: construction progress app (site entry, targets, KPIs, weekly reports, change orders).
 
 ## The real app (Phase 1, in progress)
 ```bash
