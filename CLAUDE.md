@@ -23,7 +23,7 @@ It must run **outside Claude**: site staff open it on their phones, install it t
 |---|---|
 | App type | Installable **PWA** (Android first), one codebase for site + manager screens |
 | Frontend | React + TypeScript + Vite, Tailwind, `vite-plugin-pwa` (Workbox), Dexie (IndexedDB) for the offline outbox |
-| Backend | **Supabase**: Postgres + Auth + Storage + Row Level Security. Schema in `supabase/schema.sql` |
+| Backend | **Supabase**: Postgres + Auth + Storage + Row Level Security. Schema in `supabase/migrations/` |
 | Languages | English + Arabic with full RTL. Site screens default to Arabic, manager screens to English. Western digits in both |
 | Progress maths | Exactly as `docs/03-calculations.md` (ported from the prototype — keep results identical) |
 | Entries count | Immediately when saved; manager approves later; "Adjust" = a manager `set` entry (audit trail kept) |
@@ -45,7 +45,8 @@ docs/04-finish-schedule.md     Excel room finish schedule: format + import rules
 docs/05-architecture.md        stack, offline sync, auth/roles, photos, deployment, costs
 docs/06-decisions-and-open-questions.md
 docs/07-targets-kpis-change-orders.md   targets (no-BOQ projects), KPIs, change orders
-supabase/schema.sql            starting schema with RLS policies
+supabase/migrations/           the database (applied to Supabase); supabase/tests/ = test-only stub
+supabase/schema-draft-from-kit.sql  original draft schema (superseded by migrations)
 prototype/index.html           working single-file prototype (ran inside Claude; uses claude.use("db") etc.)
 prototype/baseline-wg5.json    real baseline: West Golf Apt 5 (77 BOQ lines, 17 areas, draft schedule)
 prototype/sample-wg5.json      165 sample site entries (1–23 Nov 2026) — flagged demo:true

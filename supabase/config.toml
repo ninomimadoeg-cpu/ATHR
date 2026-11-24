@@ -1,0 +1,11 @@
+# Supabase CLI settings. The hosted project (owner's account): orbmaaqrkrnfvzygipjd, region Frankfurt.
+project_id = "orbmaaqrkrnfvzygipjd"
+
+[auth]
+site_url = "http://localhost:5173"
+# site engineers stay signed in for 90 days (docs/05)
+jwt_expiry = 3600
+
+[auth.email]
+enable_signup = false        # accounts are created by the owner only
+enable_confirmations = false
