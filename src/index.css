@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { -webkit-text-size-adjust: 100%; }
+body { @apply bg-white text-ink; font-size: 16px; }
+:lang(ar) body { font-family: "IBM Plex Sans Arabic", system-ui, sans-serif; }
+button, input, select, textarea { font-size: 16px; }
