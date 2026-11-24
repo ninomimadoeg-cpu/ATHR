@@ -31,8 +31,9 @@
 - Stage weights (e.g. painting 45/15/40, wiring 40/40/20) are typical values, not from a contract.
 - The schedule (1 Nov 2026 – 27 Feb 2027, 32 activities) is a draft so the reports work.
 
-## Added 24 Nov 2026 (after local testing) — see doc 07
-11. **Working days** for "days with a site report": Friday only off (current default), or Friday + Saturday? Public holidays?
-12. **Change order value** vs the value of its BOQ lines: warn when they differ?
-13. Can site engineers **propose** a target or a variation from site, for the manager to approve?
-14. Counted items (`no.`): allow fractional entries (0.5 of an AC unit) or whole units only?
+## Decided 24 Nov 2026 (after local testing) — see doc 07
+- **Working days**: Friday only is off (Sat–Thu working). Public holidays: not yet.
+- **Change order value** vs its BOQ lines: **warn** when they differ by more than 1% (and ask for a second tap to approve).
+- **Site proposals**: yes — site engineers can propose a target or report a variation; the manager accepts or declines.
+- **Counted items** (AC units etc.): **half units are allowed** (+0.5 button). Big items keep their stages
+  (AC: first fix incl. drains 30 · unit install 50 · testing & commissioning 20, at the end of the project).

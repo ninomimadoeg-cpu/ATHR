@@ -257,7 +257,7 @@ render();
  window.addEventListener("online",flush);setInterval(()=>{if(S.outbox.length)flush()},30000);flush();
 })();
 function subEntries(){
- if(S.unsubE)S.unsubE();S.entries=[];
+ if(S.unsubE)S.unsubE();S.entries=[];subProps();
  if(!S.pid)return;
  S.unsubE=S.db.collection("entries").where("project","==",S.pid).onSnapshot(snap=>{
   S.entries=snap.docs.map(d=>({...d.data(),id:d.id}));
@@ -318,7 +318,7 @@ function render(){
  const ob=S.outbox.filter(o=>o.e.project===S.pid).length;$("#outbox").hidden=!ob;$("#outbox").textContent=t("outbox")(ob);
  const pend=S.entries.filter(e=>e.status==="entered").length;
  const tabs=S.owner?["overview","kpis","todo","targets","weekly","approvals","photos","changes","baseline","site"]:["site","todo","kpis","overview","weekly","photos","baseline"];
- $("#tabs").innerHTML=(S.BL?tabs:[]).map(v=>`<button class="tab" type="button" data-view="${v}" aria-current="${S.view===v}">${esc(t(v))}${v==="approvals"&&pend?` <span class="pill warn">${pend}</span>`:""}</button>`).join("");
+ $("#tabs").innerHTML=(S.BL?tabs:[]).map(v=>`<button class="tab" type="button" data-view="${v}" aria-current="${S.view===v}">${esc(t(v))}${v==="approvals"&&pend?` <span class="pill warn">${pend}</span>`:""}${S.owner&&(v==="targets"||v==="changes")&&S.props&&openProps(v==="targets"?"target":"variation").length?` <span class="pill warn">${openProps(v==="targets"?"target":"variation").length}</span>`:""}</button>`).join("");
  const m=$("#main");
  if(S.err==="signedOut"){m.innerHTML=`<div class="empty">${esc(t("signedOut"))}</div>`;return}
  if(!S.loaded){m.innerHTML=`<div class="empty">${S.err?esc(t("loadFail")):"Loading project…"}</div>`;return}
@@ -397,7 +397,7 @@ function openSheet(itemId,photoOnly){
   if(it&&(it.mode==="pct"||it.mode==="check")&&val===null)val=Math.round(cur*100);
   const after=it?(it.mode==="qty"?clamp(cur+(+val||0)/q):(val/100)):0;
   const remain=it?Math.max(0,q*(1-cur)):0;
-  const steps=it?(it.unit==="no."?[1,2,5]:it.unit==="kg"?[10,25,50]:[1,5,10]):[];
+  const steps=it?(it.unit==="no."?[0.5,1,2,5]:it.unit==="kg"?[10,25,50]:[1,5,10]):[];
   L.innerHTML=`<div class="scrim" id="scrim"><form class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="${esc(it?nm(it):t("areaPhoto"))}">
    <div><div class="small muted">${esc(nm(M.areas[S.area]))} · ${esc(fmtD(S.date))}</div><h2>${esc(it?nm(it):t("areaPhoto"))}</h2>
    ${it?`<div class="small muted">${it.tgt?`${lang==="ar"?"هدف حتى":"Target due"} ${esc(fmtD(M.acts[it.stages[0].act]?.e||S.date))}${it.mode==="qty"?` · ${esc(num(q))} ${esc(U(it.unit))}`:""}`:`BOQ ${esc(it.code)} · ${esc(num(q))} ${esc(U(it.unit))}`}</div>`:""}</div>
@@ -565,9 +565,9 @@ function todoModel(w,list){
   else if(a.s<=we){target=plannedFrac(a,we);kind=a.s>=ws?"starts":"week"}
   if(!kind)continue;
   const g=groups[a.id]||(groups[a.id]={act:a,kind,lines:{},n:0,ok:0});g.n++;
-  // countable items: the target is rounded up to whole units ("start 1 AC unit"), never "0.3 no."
+  // countable items: the target is rounded up to half units (owner: half a unit is fine)
   const whole=K.it.mode==="qty"&&K.it.unit==="no.";
-  const nq=K.it.mode!=="qty"?0:whole?Math.max(0,Math.ceil(target*K.q-1e-6)-f*K.q):(target-f)*K.q;
+  const nq=K.it.mode!=="qty"?0:whole?Math.max(0,Math.ceil(target*K.q*2-1e-6)/2-f*K.q):(target-f)*K.q;
   const need=target-f;if(need<=1e-6||(K.it.mode==="qty"&&nq<.005)){g.ok++;continue}
   const lk=K.it.id+"|"+K.st.id;const L=g.lines[lk]||(g.lines[lk]={it:K.it,st:K.st,areas:[],sum:0});
   L.areas.push({area:K.area,need,f,target,q:K.q,nq});L.sum+=nq;
@@ -612,7 +612,7 @@ function vTodo(m){
  <p class="small muted">${esc(tw("intro"))}</p>
  ${ws<=today&&today<=we?`<div class="note" style="margin-top:10px">${esc(tw("today"))}: ${todayList.length?esc(tw("entries")(todayList.length))+" · "+esc([...new Set(todayList.map(e=>nm(M.areas[e.area])))].join(", ")):esc(tw("none"))}</div>`:""}
  ${!any?`<p class="empty">${esc(tw("nothing"))}</p>`:!open?`<p class="note">${esc(tw("allOnTarget"))}</p>`:""}
- ${secHtml("overdue",tw("overdue"))}${secHtml("week",tw("week"))}${secHtml("starts",tw("starts"))}`;
+ ${secHtml("overdue",tw("overdue"))}${secHtml("week",tw("week"))}${secHtml("starts",tw("starts"))}${proposalsSiteBlock()}`;
  m.dataset.todo=text;
 }
 
@@ -716,6 +716,7 @@ function vTargets(m){
   ${K.tg.map(r=>`<tr><td>${esc(r.it.en)}${r.it.ar&&r.it.ar!==r.it.en?`<div class="small muted" lang="ar" dir="rtl">${esc(r.it.ar)}</div>`:""}<div class="small muted">${esc(nm(M.trades[r.it.trade]))}${r.it.tgt.from?" · carried over":""}${r.it.tgt.co?" · "+esc(r.it.tgt.co):""}</div></td><td>${esc(nm(M.areas[r.area]))}</td><td class="n">${esc(tgVal(r))}</td><td>${tgStatus(r)}</td><td class="n">${r.w}</td>
    <td><button class="btn ghost sm" type="button" data-tgdel="${esc(r.it.id)}">Delete</button></td></tr>`).join("")}</tbody></table></div>`:`<p class="note" style="margin-top:12px">${esc(kt("noTargets"))}</p>`}
  ${carry.length?`<p style="margin-top:10px"><button class="btn" type="button" id="tgCarry">Carry over ${carry.length} unfinished target${carry.length>1?"s":""} from the previous ${P.kind==="w"?"week":"month"}</button></p>`:""}
+ ${proposalsMgrBlock("target")}
  <section><h2>Add a target</h2><form id="tgForm" class="card" style="display:grid;gap:10px">
   <label>What must be done (English)<input name="en" required maxlength="140" style="width:100%" placeholder="e.g. Finish electrical conduits in all bedrooms"></label>
   <label>بالعربي (اختياري — ما يراه مهندس الموقع)<input name="ar" maxlength="140" dir="rtl" lang="ar" style="width:100%" placeholder="مثال: الانتهاء من مواسير الكهرباء في كل غرف النوم"></label>
@@ -784,9 +785,10 @@ function vChanges(m){
   <div class="kpi"><div class="n">${sum(appr)>=0?"+":""}${esc(money(sum(appr)).replace("EGP ",""))}</div><div class="l">${appr.length} approved change${appr.length===1?"":"s"}</div></div>
   <div class="kpi"><div class="n">${esc(money(M.bac))}</div><div class="l">Current baseline</div></div>
   <div class="kpi"><div class="n ${pend.length?"neg":""}">${pend.length}</div><div class="l">Pending · ${esc(money(sum(pend)))}</div></div></div>
+ ${proposalsMgrBlock("variation")}
  ${cos.length?`<section><div class="scroll"><table class="stack"><thead><tr><th>No.</th><th>Date</th><th>Description</th><th>Type</th><th class="n">Value</th><th class="n">Days</th><th>Status</th><th></th></tr></thead><tbody>
   ${cos.slice().reverse().map(c=>`<tr><td>${esc(c.id)}</td><td>${esc(fmtD(c.date))}</td><td>${esc(c.title)}${c.note?`<div class="small muted">${esc(c.note)}</div>`:""}${(c.lines||[]).map(l=>`<div class="small">${l.type==="add"?`+ new line: ${esc(l.en)} ${esc(num(l.qty))} ${esc(l.unit)} × ${esc(num(l.rate))}`:l.type==="qty"?`${esc(l.item)}: qty → ${esc(num(l.qty))}`:l.type==="omit"?`${esc(l.item)} omitted`:""}</div>`).join("")}</td>
-   <td>${esc(c.kind)}</td><td class="n">${esc(num(+c.value||0,0))}</td><td class="n">${+c.days||0}</td><td>${c.status==="approved"?`<span class="pos">approved</span> <span class="small muted">rev ${esc(c.rev||"")}</span>`:c.status==="rejected"?"rejected":`<span class="neg">pending</span>`}</td>
+   <td>${esc(c.kind)}</td><td class="n">${esc(num(+c.value||0,0))}${coMismatch(c)?`<div class="small neg" title="The value typed differs from the value of the BOQ lines">⚠ lines = ${esc(num(c.linesValue,0))}</div>`:""}</td><td class="n">${+c.days||0}</td><td>${c.status==="approved"?`<span class="pos">approved</span> <span class="small muted">rev ${esc(c.rev||"")}</span>`:c.status==="rejected"?"rejected":`<span class="neg">pending</span>`}</td>
    <td>${c.status==="pending"&&S.owner?`<button class="btn mint sm" type="button" data-coap="${esc(c.id)}">Approve &amp; apply</button> <button class="btn ghost sm" type="button" data-corej="${esc(c.id)}">Reject</button>`:""}</td></tr>`).join("")}</tbody></table></div></section>`:""}
  ${S.owner?`<section><h2>New change order</h2><form id="coForm" class="card" style="display:grid;gap:10px">
   <div class="row"><label>Description <input name="title" required maxlength="160" style="width:min(520px,80vw)" placeholder="e.g. Client adds false ceiling in master bedroom"></label></div>
@@ -806,8 +808,8 @@ function vChanges(m){
   const b=structuredClone(S.BL);b.cos=b.cos||[];const n=b.cos.length+1;const lines=[];
   if(f.aen.value.trim()&&+f.aqty.value>0)lines.push({type:"add",en:f.aen.value.trim(),trade:f.atrade.value,qty:+f.aqty.value,unit:f.aunit.value,rate:+f.arate.value||0,area:f.aarea.value,act:f.aact.value});
   if(f.qitem&&f.qitem.value&&f.qqty.value!=="")lines.push(+f.qqty.value===0?{type:"omit",item:f.qitem.value}:{type:"qty",item:f.qitem.value,qty:+f.qqty.value});
-  b.cos.push({id:"CO-"+String(n).padStart(2,"0"),date:localToday(),title:f.title.value.trim(),kind:f.kind.value,value:+f.value.value||0,days:+f.days.value||0,req:f.req.value.trim(),note:f.note.value.trim(),lines,status:"pending",by:S.me||""});
-  await saveBaseline(b,"Change order logged");
+  b.cos.push({id:"CO-"+String(n).padStart(2,"0"),date:localToday(),title:f.title.value.trim(),kind:f.kind.value,value:+f.value.value||0,days:+f.days.value||0,req:f.req.value.trim(),note:f.note.value.trim(),lines,linesValue:coLinesValue(S.BL,lines),status:"pending",by:S.me||""});const nc=b.cos.at(-1);
+  await saveBaseline(b,coMismatch(nc)?`Logged — but the value typed (EGP ${num(nc.value,0)}) differs from its BOQ lines (EGP ${num(nc.linesValue,0)})`:"Change order logged");
  };
 }
 async function decideCO(id,approve){
@@ -839,11 +841,86 @@ document.addEventListener("click",async ev=>{
  if(b.id==="tgCarry"){const list=allEntries(),prev=kpiModel(perStep(S.per,-1),list).tg.filter(r=>r.f<1-1e-6);
   await saveTargets(prev.map(r=>({en:r.it.en,ar:r.it.ar,trade:r.it.trade,area:r.area,w:r.w,mode:r.it.mode,unit:r.it.unit,
    qty:r.it.mode==="qty"?+(r.q*(1-r.f)).toFixed(2):1,from:r.it.id})),S.per);return}
- if(b.dataset.coap){b.disabled=true;await decideCO(b.dataset.coap,true);return}
+ if(b.dataset.coap){const c=(S.BL.cos||[]).find(x=>x.id===b.dataset.coap);if(c&&coMismatch(c)&&b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent=`Value ≠ lines (EGP ${num(c.linesValue,0)}) — tap again to approve anyway`;return}b.disabled=true;await decideCO(b.dataset.coap,true);return}
  if(b.dataset.corej){b.disabled=true;await decideCO(b.dataset.corej,false);return}
  if(b.id==="newProj"){$("#npBox").innerHTML=newProjectForm();return}
 });
 document.addEventListener("submit",ev=>{if(ev.target.id==="npForm"){ev.preventDefault();createProject(ev.target)}});
+
+/* ---------- PROPOSALS FROM SITE (targets / variations) ---------- */
+/* Site engineers can propose a target (extra work they plan) or report a variation (client/consultant request, site
+   condition). They never see money. The manager accepts a target proposal into the current period, or turns a
+   variation report into a pending change order. Stored in their own collection so site users never write the baseline. */
+const PR={
+ en:{propT:"Propose a target",propV:"Report a variation",what:"What is it?",whatT:"e.g. Start plastering the first floor",whatV:"e.g. Client wants an extra socket in the kitchen",
+  who:"Requested by",client:"Client",consultant:"Consultant",siteCond:"Site condition",send:"Send to manager",sent:"Sent to the manager",mine:"My proposals",
+  proposed:"waiting",accepted:"accepted",declined:"declined",needNet:"Needs a connection — try again when online",fill:"Describe it first"},
+ ar:{propT:"اقتراح هدف",propV:"إبلاغ عن تعديل / أعمال إضافية",what:"ما هو؟",whatT:"مثال: البدء في محارة الدور الأول",whatV:"مثال: العميل يريد مخرج كهرباء إضافي في المطبخ",
+  who:"بطلب من",client:"العميل",consultant:"الاستشاري",siteCond:"ظروف الموقع",send:"إرسال للمدير",sent:"تم الإرسال للمدير",mine:"اقتراحاتي",
+  proposed:"في الانتظار",accepted:"تم القبول",declined:"مرفوض",needNet:"يحتاج اتصال بالإنترنت — حاول مرة أخرى",fill:"اكتب الوصف أولاً"}};
+const pr=k=>PR[lang][k]??PR.en[k];
+S.props=[];let unsubP=null;
+function subProps(){if(unsubP)unsubP();S.props=[];if(!S.pid||!S.db)return;
+ unsubP=S.db.collection("proposals").where("project",'==',S.pid).onSnapshot(snap=>{S.props=snap.docs.map(d=>({...d.data(),id:d.id})).sort((a,b)=>a.at<b.at?1:-1);render()},()=>{})}
+const openProps=kind=>S.props.filter(p=>p.kind===kind&&p.status==="proposed");
+function proposalsSiteBlock(){
+ const mine=S.props.filter(p=>p.by===S.me).slice(0,10);
+ return `<section><div class="row"><button class="btn" type="button" data-prop="target">${esc(pr("propT"))}</button><button class="btn" type="button" data-prop="variation">${esc(pr("propV"))}</button></div>
+ ${mine.length?`<h3 style="margin-top:12px">${esc(pr("mine"))}</h3>${mine.map(p=>`<div class="ap"><div><b>${esc(p.text)}</b><div class="small muted">${esc(p.kind==="target"?pr("propT"):pr("propV"))} · ${esc(nm(M.areas[p.area]))} · ${esc(fmtD(p.date))}</div></div><div class="small ${p.status==="accepted"?"pos":p.status==="declined"?"neg":"muted"}">${esc(pr(p.status))}</div></div>`).join("")}`:""}</section>`;
+}
+function openPropose(kind){
+ const L=$("#layer");const photos=[];
+ const draw=()=>{L.innerHTML=`<div class="scrim" id="scrim"><form class="sheet" id="pSheet" role="dialog" aria-modal="true" aria-label="${esc(pr(kind==="target"?"propT":"propV"))}">
+  <h2>${esc(pr(kind==="target"?"propT":"propV"))}</h2>
+  <label><div class="small muted" style="margin-bottom:6px">${esc(pr("what"))}</div><textarea name="text" rows="3" style="width:100%" maxlength="300" placeholder="${esc(pr(kind==="target"?"whatT":"whatV"))}"></textarea></label>
+  <label><div class="small muted" style="margin-bottom:6px">${esc(kt("area"))}</div><select name="area" style="width:100%">${S.BL.areas.map(a=>`<option value="${esc(a.id)}"${a.id===(S.area||"GEN")?" selected":""}>${esc(nm(a))}</option>`).join("")}</select></label>
+  <label><div class="small muted" style="margin-bottom:6px">${esc(lang==="ar"?"التخصص":"Trade")}</div><select name="trade" style="width:100%">${S.BL.trades.map(tr=>`<option value="${esc(tr.id)}">${esc(nm(tr))}</option>`).join("")}</select></label>
+  ${kind==="variation"?`<label><div class="small muted" style="margin-bottom:6px">${esc(pr("who"))}</div><select name="req" style="width:100%"><option value="Client">${esc(pr("client"))}</option><option value="Consultant">${esc(pr("consultant"))}</option><option value="Site condition">${esc(pr("siteCond"))}</option></select></label>`:""}
+  ${S.assets?`<div><label class="btn ghost" style="width:100%">${ICON.cam} ${esc(t("addPhotos"))}<input id="pph" type="file" accept="image/*" capture="environment" multiple hidden></label><div class="thumbs" style="margin-top:8px">${photos.map(u=>`<img src="${esc(u)}" alt="">`).join("")}</div></div>`:""}
+  <div class="row"><button class="btn ghost" type="button" id="pCancel">${esc(t("cancel"))}</button><button class="btn pri sp" style="flex:1" type="submit" id="pSend">${esc(pr("send"))}</button></div></form></div>`;
+  const f=$("#pSheet");const keep={text:f.text.value};
+  $("#pCancel").onclick=()=>L.innerHTML="";$("#scrim").onclick=ev=>{if(ev.target.id==="scrim")L.innerHTML=""};
+  const ph=$("#pph");if(ph)ph.onchange=async()=>{const txt=f.text.value,ar=f.area.value,tr=f.trade.value,rq=f.req?.value;for(const fl of ph.files){try{photos.push(await blobToUrl(await compress(fl)))}catch(e){}}draw();const g=$("#pSheet");g.text.value=txt;g.area.value=ar;g.trade.value=tr;if(g.req&&rq)g.req.value=rq};
+  f.onsubmit=async ev=>{ev.preventDefault();const text=f.text.value.trim();if(!text){toast(pr("fill"));return}
+   $("#pSend").disabled=true;$("#pSend").textContent=t("saving");
+   try{const ids=[];for(const u of photos){const r=await within(S.assets.upload(await dataUrlToBlob(u),{type:"image/jpeg"}),45000);ids.push(r.id)}
+    const id=localToday().replace(/-/g,"")+"-"+uid();
+    await within(S.db.collection("proposals").doc(id).set({project:S.pid,kind,text,area:f.area.value,trade:f.trade.value,req:f.req?.value||"",photos:ids,date:localToday(),at:new Date().toISOString(),by:S.me||"",status:"proposed"}),15000);
+    L.innerHTML="";toast(pr("sent"))}
+   catch(e){$("#pSend").disabled=false;$("#pSend").textContent=pr("send");toast(pr("needNet"))}};
+ };
+ draw();
+}
+function proposalsMgrBlock(kind){
+ const ps=openProps(kind);if(!ps.length)return"";
+ return `<section><h2>${kind==="target"?"Proposed by site":"Reported from site"} <span class="pill warn">${ps.length}</span></h2>
+ ${ps.map(p=>`<div class="ap"><div><b>${esc(p.text)}</b><div class="small muted">${esc(nm(M.areas[p.area]))} · ${esc(nm(M.trades[p.trade]))}${p.req?" · requested by "+esc(p.req):""} · ${esc(who(p.by))} · ${esc(fmtD(p.date))}</div>
+  ${(p.photos||[]).length?`<div class="thumbs" style="margin-top:6px">${p.photos.filter(okId).map(id=>`<img src="/_blob/${esc(id)}" alt="">`).join("")}</div>`:""}</div>
+  <div class="row" style="align-content:flex-start"><button class="btn mint sm" type="button" data-pracc="${esc(p.id)}">${kind==="target"?"Add as target":"Log as change order"}</button><button class="btn ghost sm" type="button" data-prdec="${esc(p.id)}">Decline</button></div></div>`).join("")}
+ ${kind==="target"?`<p class="small muted">"Add as target" puts it in the period shown above as done / not done, weight Normal. Delete and re-add it if you want a quantity.</p>`:`<p class="small muted">"Log as change order" creates a pending change order (value 0) for you to price and approve.</p>`}</section>`;
+}
+async function acceptProposal(id){
+ const p=S.props.find(x=>x.id===id);if(!p)return;const b=structuredClone(S.BL);let ref="";
+ if(p.kind==="target"){const {it,act}=newTarget({en:p.text,ar:p.text,trade:p.trade,area:p.area,w:1,mode:"check",qty:1,unit:""},S.per||perNow("w"));it.tgt.proposal=p.id;b.items.push(it);b.acts.push(act);ref=it.id}
+ else{b.cos=b.cos||[];ref="CO-"+String(b.cos.length+1).padStart(2,"0");
+  b.cos.push({id:ref,date:localToday(),title:p.text,kind:"Modification",value:0,days:0,req:p.req||"",note:`Reported from site by ${who(p.by)} on ${fmtD(p.date)} (${nm(M.areas[p.area])})`,lines:[],linesValue:null,photos:p.photos||[],status:"pending",by:S.me||"",proposal:p.id})}
+ try{await S.db.doc("projects/"+S.pid).set(b);await S.db.collection("proposals").doc(id).update({status:"accepted",ref,decidedAt:new Date().toISOString()});toast(p.kind==="target"?"Added as a target":`Logged as ${ref}`)}
+ catch(e){toast("Could not save: "+(e?.code||"error"))}
+}
+document.addEventListener("click",async ev=>{
+ const b=ev.target.closest("button");if(!b||!S.BL)return;
+ if(b.dataset.prop){openPropose(b.dataset.prop);return}
+ if(b.dataset.pracc){b.disabled=true;await acceptProposal(b.dataset.pracc);return}
+ if(b.dataset.prdec){b.disabled=true;try{await S.db.collection("proposals").doc(b.dataset.prdec).update({status:"declined",decidedAt:new Date().toISOString()})}catch(e){toast("Could not save")}return}
+});
+
+/* value of a change order's BOQ lines, worked out when it is logged (before quantities change) */
+function coLinesValue(b,lines){
+ if(!lines.length)return null;let v=0;
+ for(const l of lines){if(l.type==="add")v+=l.qty*l.rate;else{const it=b.items.find(i=>i.id===l.item);if(it)v+=((l.type==="omit"?0:l.qty)-it.qty)*it.rate}}
+ return Math.round(v*100)/100;
+}
+const coMismatch=c=>c.linesValue!=null&&Math.abs((+c.value||0)-c.linesValue)>Math.max(1,Math.abs(c.linesValue)*.01);
 
 /* ---------- APPROVALS ---------- */
 function vApprovals(m){

@@ -66,7 +66,21 @@ Overview and Weekly report fall back to the KPI screen when the project has no B
 - `progress_entries.kind` gains `note`.
 - RLS: only owner/manager write targets and change orders; CO values hidden from site users like rates.
 
-## Open questions (added to doc 06)
-- Working days: Friday only off, or Friday + Saturday? Public holidays?
-- Should a CO's typed value be checked against the value of its BOQ lines (warn if they differ)?
-- Can site engineers propose a target or a variation from site (manager approves)?
+## Mismatch warning (decided)
+When a CO is logged, the value of its BOQ lines is worked out (new lines qty × rate; changed quantities × existing rate)
+and stored as `linesValue`. If the typed value differs by more than 1% (min EGP 1) the app warns on logging, shows
+"⚠ lines = …" in the register, and approving needs a second tap.
+
+## Proposals from site (decided)
+- Site engineers (This week tab) can **propose a target** or **report a variation**: description, area, trade,
+  requested by (client / consultant / site condition) for variations, optional photos. No money is shown or asked.
+- Stored in `proposals` (site users never write the baseline). Manager sees a badge on Targets / Change orders:
+  **Add as target** (done/not-done, weight Normal, current period) or **Log as change order** (pending, value 0, photos
+  and site note carried over), or **Decline**. The site sees the status (waiting / accepted / declined).
+- Prototype sends proposals online only; Phase 1 should queue them in the offline outbox like entries.
+- Schema: `proposals(id, project_id, kind target|variation, text, area_id, trade, requested_by, photos, work_date,
+  created_by, created_at, status proposed|accepted|declined, ref, decided_by, decided_at)`; site may insert own rows only.
+
+## Working days and counted items (decided)
+- Off days default `{5}` (Friday). Public holidays later.
+- Counted items accept half units (+0.5 quick button); the to-do note rounds targets up to half units.
