@@ -8,6 +8,12 @@
 | Cloudflare Pages | (Step 8) | Hosts the app from the `main` branch. |
 
 ## Database changes
+**Applied automatically**: when a change to `supabase/migrations/` reaches `main`, the GitHub action
+"Deploy database" applies it to Supabase. It needs two secrets in GitHub (Settings → Secrets and variables → Actions):
+`SUPABASE_ACCESS_TOKEN` (Supabase → your avatar → Account preferences → Access Tokens → Generate) and
+`SUPABASE_DB_PASSWORD` (the database password you chose; reset it in Supabase → Project Settings → Database if lost).
+You can re-run it from GitHub → Actions → Deploy database → Run workflow.
+
 All changes are files in `supabase/migrations/`, applied in name order. They are tested on every push
 (`test/db.test.ts`: site engineers can't read rates/values/change orders or other projects; duplicates rejected; etc.).
 `supabase/tests/supabase-stub.sql` is for tests only and must never be run on the real project.
