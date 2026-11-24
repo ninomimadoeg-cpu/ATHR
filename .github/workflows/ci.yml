@@ -1,0 +1,31 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Python finish-schedule tool still matches the TypeScript fixture
+        run: |
+          pip install openpyxl
+          python tools/finish_schedule.py import prototype/baseline-wg5.json "data/WG5 Finish Schedule.xlsx" /tmp/py.json > /dev/null
+          python - <<'PY'
+          import json
+          b=json.load(open('/tmp/py.json')); ref=json.load(open('test/fixtures/wg5-finish-schedule-python.json'))
+          assert [a['id'] for a in b['areas']]==ref['areas'], 'areas differ'
+          assert {i['id']:i['alloc'] for i in b['items']}==ref['alloc'], 'split differs'
+          print('Python and TypeScript splits match')
+          PY
+      - run: npm run build

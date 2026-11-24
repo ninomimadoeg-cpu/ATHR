@@ -1,6 +1,15 @@
 # Site Progress — handoff kit
 
-## Try it on your own computer first (local test)
+## The real app (Phase 1, in progress)
+```bash
+npm install
+npm test          # calculation tests: prototype parity, working days, finish schedule = Python, KPIs, change orders
+npm run dev       # app on http://localhost:5173
+npm run build     # installable offline app in dist/
+```
+Code: `src/core/` (calculations, no UI), `src/app/` (screens), `test/`. GitHub runs the tests on every push.
+
+## Try the prototype on your own computer (local test)
 You need Python 3 (Mac: already installed; Windows: install from python.org, tick "Add to PATH").
 
 1. Open a terminal in this folder.

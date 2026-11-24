@@ -17,8 +17,11 @@ Take the project's entries with `work_date ≤ d`, sorted by (`work_date`, `crea
 `clamp` limits to 0…1. Entries for keys that no longer exist (after a re-split) are ignored.
 
 ## Planned progress of a key at date d
-Each stage links to one activity `[s, e]` (inclusive calendar dates).
-`pf = 0` if d < s; `1` if d ≥ e; else `(d − s + 1) / (e − s + 1)`. Linear over calendar days (Phase 2 may switch to working days).
+Each stage links to one activity `[s, e]` (inclusive dates).
+`pf = 0` if d < s; `1` if d ≥ e; else `counted days in [s, d] / counted days in [s, e]`.
+**Owner decision (24 Nov 2026): counted days = working days, Sat–Thu (project `offDays`, default Friday).**
+An activity made only of off days falls back to calendar days. The prototype counted calendar days; that rule is
+kept in `src/core/dates.ts` (`CALENDAR`) so the parity tests below still prove the port is exact.
 
 ## Aggregates
 For any group (whole project, trade, area, area × trade, activity):
@@ -45,6 +48,16 @@ For any group (whole project, trade, area, area × trade, activity):
 | Week 4 by trade, actual vs planned | HVAC 19.4/33.1 · Electrical 18.2/28.3 · Plumbing 23.0/47.4 · Finishes 0/0 |
 
 (Sample entries all have `status` approved before 17 Nov and `entered` after; 81 awaiting approval.)
+
+The table above is on **calendar days** (prototype parity). With the **working-day rule** (Friday off) the app shows:
+
+| Check | Working days |
+|---|---|
+| As of 2026-11-24: actual / planned / SPI | 10.9% / 16.5% / 0.66 |
+| Week 4, as of 24 Nov: actual / planned to week end | 10.9% / 18.5% |
+| Week 4 this week: done / planned | 2.8% / 4.2% |
+
+Both tables are asserted in `test/core.test.ts`.
 
 ## Entry rules
 - Entry IDs are client-generated (UUID) so retries never duplicate (upsert on id).
