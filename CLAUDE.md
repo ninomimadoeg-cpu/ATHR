@@ -30,7 +30,7 @@ It must run **outside Claude**: site staff open it on their phones, install it t
 | Quantity entry | Site enters **today's quantity** (delta) for qty items, **cumulative %** for pct items |
 | Money | Site engineers never see rates or values; only managers do (enforce in RLS/views, not just the UI) |
 | Excel | SheetJS for reading; ExcelJS for writing styled templates (finish schedule, BOQ split) |
-| Hosting | Vercel (frontend) + Supabase cloud; the owner owns both accounts |
+| Hosting | Cloudflare Pages (frontend, free plan allows business use) + Supabase cloud free tier; the owner owns both accounts |
 
 Open questions are listed in `docs/06-decisions-and-open-questions.md` — ask the owner before building anything that depends on one.
 

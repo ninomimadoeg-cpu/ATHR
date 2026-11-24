@@ -13,17 +13,24 @@
 - For the company's own use (not a product for sale, for now).
 - Site staff must not need Claude — the app has to run standalone on their phones.
 
-## Open questions — ask before building what depends on them
-1. **Site sign-in**: phone + password created by the manager (recommended, free) or SMS one-time codes (costs per SMS)?
-2. **Working calendar**: should planned progress spread over working days only (e.g. Sun–Thu, or Sat–Thu), with holidays?
-3. **Zero-priced BOQ lines** (WG5 exhaust fans, condensate drain): leave at zero weight, or weight by an estimated rate?
+## Phase 1 decisions (owner, 24 Nov 2026)
+1. **Site sign-in**: phone + password; accounts created by the owner in the app; 90-day sessions. No SMS.
+2. **Working calendar**: planned progress advances on **working days only, Sat–Thu (Friday off)**. Public holidays later.
+   (Changes the planned reference numbers in doc 03 — recomputed in Phase 1 step 2; calendar-day results kept as a parity test.)
+3. **Zero-priced BOQ lines**: stay at zero weight (tracked, don't move value %).
+6. **WG5 PP-R pipes** (BOQ 4.1–4.5): lump sums tracked by %.
+7. **Photos**: no GPS. **Free storage only**: photos 1280 px JPEG; storage meter with a warning at 80%; owner downloads
+   zips (by project / date range, folders by date and area) to a laptop or external drive, then "free up space" deletes
+   the full-size files and keeps a ~25 KB preview (archived photos show "archived on <date>").
+10. **Accounts**: owner creates GitHub (repo `ninomimadoeg-cpu/ATHR`), Supabase (free, Frankfurt) and **Cloudflare Pages**
+    (free plan allows business use) instead of Vercel. A daily keep-alive stops the free Supabase project pausing.
+- **Users in Phase 1**: the owner is the only manager; the `manager` role stays in the schema for later.
+
+## Still open (not blocking Phase 1 code — WG5 data, fix in the finish schedule before go-live)
 4. **WG5 kitchen**: F03/C02 (plan tags + BOQ) or F01/C03 (finishing table)?
 5. **WG5 fixtures**: where are the 5th WC and the 2 extra lavatories (currently "whole apartment")?
-6. **WG5 PP-R water pipes** (BOQ 4.1–4.5) have no quantities — track as lump sums by %?
-7. **Photos**: keep GPS location on photos? How long to keep them?
-8. **Schedule detail**: one activity for all areas (as now) or sequenced per area (Bath 1 → Bath 4)?
-9. **Weekly report day**: weeks run Sunday→Saturday now; report on Thursday evening?
-10. **Accounts and domain**: the owner should create the Supabase and Vercel accounts (and optionally a domain) so he owns the data.
+8. **Schedule detail**: one activity for all areas (as now) or sequenced per area (Bath 1 → Bath 4)? (Phase 2)
+9. **Weekly report day**: weeks run Sunday→Saturday now; report on Thursday evening? (Phase 2 scheduled sending)
 
 ## Assumptions made in the WG5 baseline (to review)
 - Areas and dimensions were read from the PDF drawings, not measured; irregular rooms use estimated overrides.
