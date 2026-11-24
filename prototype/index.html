@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Site Progress</title>
+<script src="local-runtime.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -157,7 +158,7 @@ en:{site:"Site entry",overview:"Overview",weekly:"Weekly report",approvals:"Appr
  outbox:n=>`${n} waiting to send`,complete:"Complete",nothingNow:"Nothing is scheduled in this area right now — showing all items.",
  noItems:"No BOQ items are assigned to this area.",photoOnly:"Photo of the area",cancel:"Cancel",
  loadFail:"Can't reach the project data yet. Check the connection; this page keeps trying.",signedOut:"Sign in to Claude to use this app.",
- noProject:"No project baseline has been loaded yet.",sample:"Sample",stillOk:"OK"},
+ noProject:"No project baseline has been loaded yet.",sample:"Sample",stillOk:"OK",todo:"This week"},
 ar:{site:"تسجيل الموقع",overview:"نظرة عامة",weekly:"التقرير الأسبوعي",approvals:"الاعتماد",photos:"الصور",baseline:"الأساس",
  date:"التاريخ",areas:"المناطق",pickArea:"اختر المكان الذي تعمل فيه",updatedToday:"تم التحديث اليوم",back:"المناطق",now:"المجدول الآن",all:"كل البنود",
  done:"منفذ",of:"من",stage:"المرحلة",todayQty:"الكمية المنفذة اليوم",setPct:"نسبة الإنجاز الآن",note:"ملاحظة (اختياري)",notePh:"أي شيء يجب أن يعرفه المدير",
@@ -167,7 +168,7 @@ ar:{site:"تسجيل الموقع",overview:"نظرة عامة",weekly:"التق
  outbox:n=>`${n} في انتظار الإرسال`,complete:"مكتمل",nothingNow:"لا يوجد عمل مجدول في هذا المكان الآن — نعرض كل البنود.",
  noItems:"لا توجد بنود مخصصة لهذا المكان.",photoOnly:"صورة للمكان",cancel:"إلغاء",
  loadFail:"تعذر الوصول لبيانات المشروع. تأكد من الاتصال؛ الصفحة تحاول مرة أخرى.",signedOut:"سجّل الدخول إلى Claude لاستخدام التطبيق.",
- noProject:"لم يتم تحميل أساس المشروع بعد.",sample:"عينة",stillOk:"حسناً"}};
+ noProject:"لم يتم تحميل أساس المشروع بعد.",sample:"عينة",stillOk:"حسناً",todo:"مهام الأسبوع"}};
 let lang="en";
 let langStored=false;
 try{const v=localStorage.getItem("sp-lang");langStored=!!v;lang=v==="ar"?"ar":"en"}catch(e){}
@@ -316,13 +317,13 @@ function render(){
  ps.innerHTML=S.projects.map(p=>`<option value="${esc(p.id)}"${p.id===S.pid?" selected":""}>${esc(nm(p))}</option>`).join("");
  const ob=S.outbox.filter(o=>o.e.project===S.pid).length;$("#outbox").hidden=!ob;$("#outbox").textContent=t("outbox")(ob);
  const pend=S.entries.filter(e=>e.status==="entered").length;
- const tabs=S.owner?["overview","weekly","approvals","photos","baseline","site"]:["site","overview","weekly","photos","baseline"];
+ const tabs=S.owner?["overview","todo","weekly","approvals","photos","baseline","site"]:["site","todo","overview","weekly","photos","baseline"];
  $("#tabs").innerHTML=(S.BL?tabs:[]).map(v=>`<button class="tab" type="button" data-view="${v}" aria-current="${S.view===v}">${esc(t(v))}${v==="approvals"&&pend?` <span class="pill warn">${pend}</span>`:""}</button>`).join("");
  const m=$("#main");
  if(S.err==="signedOut"){m.innerHTML=`<div class="empty">${esc(t("signedOut"))}</div>`;return}
  if(!S.loaded){m.innerHTML=`<div class="empty">${S.err?esc(t("loadFail")):"Loading project…"}</div>`;return}
  if(!S.BL){if(S.owner)vSetup(m);else m.innerHTML=`<div class="empty">${esc(t("noProject"))}</div>`;return}
- ({site:vSite,overview:vOverview,weekly:vWeekly,approvals:vApprovals,photos:vPhotos,baseline:vBaseline}[S.view]||vSite)(m);
+ ({site:vSite,todo:vTodo,overview:vOverview,weekly:vWeekly,approvals:vApprovals,photos:vPhotos,baseline:vBaseline}[S.view]||vSite)(m);
 }
 
 /* ---------- SITE ---------- */
@@ -537,6 +538,81 @@ function vWeekly(m){
  mountCurve(curve(list,today),w);
 }
 
+/* ---------- THIS WEEK (to-do note from the schedule + area split) ---------- */
+const TW={
+ en:{title:w=>`Week ${w} to-do`,asOf:(d,n)=>`as of ${d} · ${n} day${n===1?"":"s"} left in the week`,future:"This week hasn't started — showing what it will need.",
+  overdue:"Overdue — should already be finished",week:"Due this week",starts:"Starting this week",nothing:"Nothing scheduled this week.",
+  ends:"ends",startsOn:"starts",onTarget:(a,b)=>`${a} of ${b} on target`,to:"to",now:"now",total:"total",copy:"Copy to-do (WhatsApp)",copied:"To-do copied — paste it into WhatsApp",
+  intro:"What has to happen in each area to be on plan by the end of the week, worked out from the schedule and the area split. Quantities drop as the site logs progress, so check it during the week.",
+  allOnTarget:"Everything due this week is on target.",today:"Logged today",none:"nothing yet",entries:n=>`${n} entr${n===1?"y":"ies"}`},
+ ar:{title:w=>`مهام الأسبوع ${w}`,asOf:(d,n)=>`حتى ${d} · متبقي ${n} يوم في الأسبوع`,future:"الأسبوع لم يبدأ بعد — نعرض المطلوب فيه.",
+  overdue:"متأخر — كان يجب أن ينتهي",week:"مطلوب هذا الأسبوع",starts:"يبدأ هذا الأسبوع",nothing:"لا يوجد عمل مجدول هذا الأسبوع.",
+  ends:"ينتهي",startsOn:"يبدأ",onTarget:(a,b)=>`${a} من ${b} في الموعد`,to:"إلى",now:"الآن",total:"الإجمالي",copy:"نسخ المهام (واتساب)",copied:"تم النسخ — الصقها في واتساب",
+  intro:"المطلوب في كل مكان ليكون العمل حسب الخطة في نهاية الأسبوع، محسوب من البرنامج الزمني وتوزيع الكميات. الكميات تقل كلما سجل الموقع تقدماً.",
+  allOnTarget:"كل المطلوب هذا الأسبوع في الموعد.",today:"المسجل اليوم",none:"لا شيء بعد",entries:n=>`${n} إدخال`}};
+const tw=k=>TW[lang][k]??TW.en[k];
+const fmtDW=s=>new Date(dn(s)*864e5).toLocaleDateString(lang==="ar"?"ar-EG-u-nu-latn":"en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"});
+function todoModel(w,list){
+ const today=localToday(),[ws,we]=weekRange(w),asOf=today<we?today:we;
+ const st=stateAt(asOf<ws?today:asOf,list);
+ const groups={};// act id -> {act, kind, lines:{itemStage -> {it,st,areas:[]}} , n, ok}
+ for(const K of M.keys){const a=K.act;if(!a)continue;
+  const f=st[K.k]||0;let kind=null,target=0;
+  if(a.e<ws){if(f<1-1e-6){kind="overdue";target=1}}
+  else if(a.s<=we){target=plannedFrac(a,we);kind=a.s>=ws?"starts":"week"}
+  if(!kind)continue;
+  const g=groups[a.id]||(groups[a.id]={act:a,kind,lines:{},n:0,ok:0});g.n++;
+  // countable items: the target is rounded up to whole units ("start 1 AC unit"), never "0.3 no."
+  const whole=K.it.mode==="qty"&&K.it.unit==="no.";
+  const nq=K.it.mode!=="qty"?0:whole?Math.max(0,Math.ceil(target*K.q-1e-6)-f*K.q):(target-f)*K.q;
+  const need=target-f;if(need<=1e-6||(K.it.mode==="qty"&&nq<.005)){g.ok++;continue}
+  const lk=K.it.id+"|"+K.st.id;const L=g.lines[lk]||(g.lines[lk]={it:K.it,st:K.st,areas:[],sum:0});
+  L.areas.push({area:K.area,need,f,target,q:K.q,nq});L.sum+=nq;
+ }
+ const order=Object.values(groups).sort((x,y)=>(x.act.e<y.act.e?-1:x.act.e>y.act.e?1:0));
+ return {ws,we,asOf,today,groups:order};
+}
+function todoLine(L,plain){
+ const qty=L.it.mode==="qty";
+ const parts=L.areas.map(a=>{const nmA=nm(M.areas[a.area]);
+  return qty?`${nmA} ${num(a.nq,1)}`:`${nmA} ${pct(a.f)}→${pct(a.target)}`});
+ const head=`${nm(L.it)}${L.it.stages.length>1?" · "+nm(L.st):""}`;
+ const tot=qty?` (${tw("total")} ${num(L.sum,1)} ${U(L.it.unit)})`:"";
+ if(plain)return `• ${head}: ${parts.join(lang==="ar"?"، ":", ")}${qty?" "+U(L.it.unit):""}${tot}`;
+ return `<li><b>${esc(head)}</b>${qty?` <span class="muted small">${esc(tot)}</span>`:""}<div class="small">${parts.map(esc).join(" · ")}${qty?" "+esc(U(L.it.unit)):""}</div></li>`;
+}
+function vTodo(m){
+ const list=allEntries();if(!S.tw)S.tw=Math.max(1,Math.min(weekOf(localToday()),lastWeek()));
+ const w=S.tw,T0=todoModel(w,list),{ws,we,today}=T0;
+ const daysLeft=today>we?0:today<ws?7:Math.round(dn(we)-dn(today))+1;
+ const sec=kind=>T0.groups.filter(g=>g.kind===kind);
+ const todayList=list.filter(e=>e.date===today&&e.kind!=="photo");
+ const block=(g,plain)=>{const lines=Object.values(g.lines);const tr=nm(M.trades[g.act.trade]);
+  const when=g.kind==="starts"?`${tw("startsOn")} ${fmtDW(g.act.s)}${lang==="ar"?" ← ":", "}${tw("ends")} ${fmtDW(g.act.e)}`:`${tw("ends")} ${fmtDW(g.act.e)}`;
+  if(plain)return lines.length?`▸ ${nm(g.act)} (${tr}) — ${when}\n${lines.map(L=>todoLine(L,true)).join("\n")}`:"";
+  return `<div class="card" style="margin-top:10px"><div class="row" style="justify-content:space-between"><h3>${esc(nm(g.act))} <span class="muted small">· ${esc(tr)}</span></h3>
+   <span class="pill${lines.length&&g.kind!=="starts"?" warn":""}">${esc(tw("onTarget")(g.ok,g.n))}</span></div><div class="small muted">${esc(when)}</div>
+   <span class="meter" style="margin:8px 0"><span style="width:${g.n?g.ok/g.n*100:0}%"></span></span>
+   ${lines.length?`<ul style="margin:6px 0 0;padding-inline-start:18px;display:grid;gap:6px">${lines.map(L=>todoLine(L)).join("")}</ul>`:""}</div>`};
+ const secHtml=(kind,label)=>{const gs=sec(kind);if(!gs.length)return"";
+  return `<section><h2${kind==="overdue"?' class="neg"':""}>${esc(label)}</h2>${gs.map(g=>block(g)).join("")}</section>`};
+ const head=`${nm(S.BL)} — ${tw("title")(w)} (${fmtD(ws)}–${fmtD(we)})`;
+ const textSec=(kind,label)=>{const b=sec(kind).map(g=>block(g,true)).filter(Boolean);return b.length?`\n${label.toUpperCase()}\n${b.join("\n")}`:""};
+ const text=`${head}\n${tw("asOf")(fmtDW(T0.asOf<ws?ws:T0.asOf),daysLeft)}`+
+  textSec("overdue","⚠ "+tw("overdue"))+textSec("week",tw("week"))+textSec("starts",tw("starts"));
+ const any=T0.groups.length,open=T0.groups.some(g=>Object.keys(g.lines).length);
+ m.innerHTML=`<div class="row"><button class="btn ghost sm" type="button" id="twPrev" ${w<=1?"disabled":""} aria-label="Previous week">‹</button>
+  <b>${esc(fmtD(ws))} – ${esc(fmtD(we))}</b><button class="btn ghost sm" type="button" id="twNext" ${w>=lastWeek()?"disabled":""} aria-label="Next week">›</button>
+  <button class="btn sm sp" type="button" id="copyTodo">${esc(tw("copy"))}</button></div>
+ <h1 style="margin-top:14px">${esc(tw("title")(w))}</h1>
+ <p class="muted">${esc(today<ws?tw("future"):tw("asOf")(fmtDW(T0.asOf),daysLeft))}</p>
+ <p class="small muted">${esc(tw("intro"))}</p>
+ ${ws<=today&&today<=we?`<div class="note" style="margin-top:10px">${esc(tw("today"))}: ${todayList.length?esc(tw("entries")(todayList.length))+" · "+esc([...new Set(todayList.map(e=>nm(M.areas[e.area])))].join(", ")):esc(tw("none"))}</div>`:""}
+ ${!any?`<p class="empty">${esc(tw("nothing"))}</p>`:!open?`<p class="note">${esc(tw("allOnTarget"))}</p>`:""}
+ ${secHtml("overdue",tw("overdue"))}${secHtml("week",tw("week"))}${secHtml("starts",tw("starts"))}`;
+ m.dataset.todo=text;
+}
+
 /* ---------- APPROVALS ---------- */
 function vApprovals(m){
  const list=allEntries().filter(e=>e.status!=="pending");
@@ -621,7 +697,7 @@ async function reimport(btn){
 const FS_KEYS=["id","en","ar","type","len","wid","area_ov","per_ov","h","open","doors","floor","skirt","wall1","wall1h","wall2","ceil","cpaint","sc7","sc25","wp","showers","notes"];
 const FS_BASES=["floor","skirting","wall","ceiling","ceiling-paint","screed7","screed25","wp-floor","wp-upturn","wp-shower"];
 let xlsxLib=null;
-function loadXlsx(){return xlsxLib||(xlsxLib=new Promise((res,rej)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";s.onload=()=>res(window.XLSX);s.onerror=()=>{xlsxLib=null;rej(new Error("Could not load the Excel reader"))};document.head.append(s)}))}
+function loadXlsx(){return xlsxLib||(xlsxLib=new Promise((res,rej)=>{const s=document.createElement("script");s.src=window.claude?.local?"vendor/xlsx.full.min.js":"https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";s.onload=()=>res(window.XLSX);s.onerror=()=>{xlsxLib=null;rej(new Error("Could not load the Excel reader"))};document.head.append(s)}))}
 const fnum=v=>v===null||v===undefined||v===""||isNaN(+v)?null:+v;
 const fstr=v=>v===null||v===undefined?"":String(v).trim();
 function fsRead(wb){
@@ -718,6 +794,8 @@ document.addEventListener("click",async ev=>{
  if(b.dataset.item){openSheet(b.dataset.item);return}
  if(b.id==="areaPhoto"){openSheet(null,true);return}
  if(b.dataset.apf){S.apFilter=b.dataset.apf;render();return}
+ if(b.id==="twPrev"){S.tw--;render();return}if(b.id==="twNext"){S.tw++;render();return}
+ if(b.id==="copyTodo"){try{await navigator.clipboard.writeText($("#main").dataset.todo||"");toast(tw("copied"))}catch(e){toast("Copy was blocked by the browser")}return}
  if(b.id==="wPrev"){S.week--;render();return}if(b.id==="wNext"){S.week++;render();return}
  if(b.id==="copySum"){try{await navigator.clipboard.writeText($("#main").dataset.summary||"");toast("Summary copied — paste it into WhatsApp or email")}catch(e){toast("Copy was blocked by the browser")}return}
  if(b.dataset.ok){const e=S.entries.find(x=>x.id===b.dataset.ok);if(e){b.disabled=true;await setStatus(e,"approved")}return}
