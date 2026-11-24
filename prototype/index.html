@@ -153,22 +153,22 @@ en:{site:"Site entry",overview:"Overview",weekly:"Weekly report",approvals:"Appr
  date:"Date",areas:"Areas",pickArea:"Choose the area you are working in",updatedToday:"updated today",back:"Areas",now:"Scheduled now",all:"All items",
  done:"done",of:"of",stage:"Stage",todayQty:"Quantity done today",setPct:"Progress now",note:"Note (optional)",notePh:"Anything the manager should know",
  addPhotos:"Add photos",save:"Save",saving:"Saving…",saved:"Saved",savedOffline:"Saved on this phone — will send when online",
- remaining:"All remaining",after:"After saving",areaPhoto:"Area photo",todayHere:"Today in this area",del:"Delete",pending:"waiting to send",
+ remaining:"All remaining",after:"After saving",areaPhoto:"Photo / note",todayHere:"Today in this area",del:"Delete",pending:"waiting to send",
  noWrite:"You can view progress but not record it. Ask the project owner for edit access.",noPhoto:"Photos need upload access on this artifact.",
  outbox:n=>`${n} waiting to send`,complete:"Complete",nothingNow:"Nothing is scheduled in this area right now — showing all items.",
  noItems:"No BOQ items are assigned to this area.",photoOnly:"Photo of the area",cancel:"Cancel",
  loadFail:"Can't reach the project data yet. Check the connection; this page keeps trying.",signedOut:"Sign in to Claude to use this app.",
- noProject:"No project baseline has been loaded yet.",sample:"Sample",stillOk:"OK",todo:"This week"},
+ noProject:"No project baseline has been loaded yet.",sample:"Sample",stillOk:"OK",todo:"This week",kpis:"KPIs",targets:"Targets",changes:"Change orders"},
 ar:{site:"تسجيل الموقع",overview:"نظرة عامة",weekly:"التقرير الأسبوعي",approvals:"الاعتماد",photos:"الصور",baseline:"الأساس",
  date:"التاريخ",areas:"المناطق",pickArea:"اختر المكان الذي تعمل فيه",updatedToday:"تم التحديث اليوم",back:"المناطق",now:"المجدول الآن",all:"كل البنود",
  done:"منفذ",of:"من",stage:"المرحلة",todayQty:"الكمية المنفذة اليوم",setPct:"نسبة الإنجاز الآن",note:"ملاحظة (اختياري)",notePh:"أي شيء يجب أن يعرفه المدير",
  addPhotos:"إضافة صور",save:"حفظ",saving:"جاري الحفظ…",saved:"تم الحفظ",savedOffline:"تم الحفظ على الهاتف — سيُرسل عند توفر الإنترنت",
- remaining:"كل المتبقي",after:"بعد الحفظ",areaPhoto:"صورة للمكان",todayHere:"اليوم في هذا المكان",del:"حذف",pending:"في انتظار الإرسال",
+ remaining:"كل المتبقي",after:"بعد الحفظ",areaPhoto:"صورة / ملاحظة",todayHere:"اليوم في هذا المكان",del:"حذف",pending:"في انتظار الإرسال",
  noWrite:"يمكنك مشاهدة التقدم فقط. اطلب صلاحية التعديل من مالك المشروع.",noPhoto:"رفع الصور يحتاج صلاحية.",
  outbox:n=>`${n} في انتظار الإرسال`,complete:"مكتمل",nothingNow:"لا يوجد عمل مجدول في هذا المكان الآن — نعرض كل البنود.",
  noItems:"لا توجد بنود مخصصة لهذا المكان.",photoOnly:"صورة للمكان",cancel:"إلغاء",
  loadFail:"تعذر الوصول لبيانات المشروع. تأكد من الاتصال؛ الصفحة تحاول مرة أخرى.",signedOut:"سجّل الدخول إلى Claude لاستخدام التطبيق.",
- noProject:"لم يتم تحميل أساس المشروع بعد.",sample:"عينة",stillOk:"حسناً",todo:"مهام الأسبوع"}};
+ noProject:"لم يتم تحميل أساس المشروع بعد.",sample:"عينة",stillOk:"حسناً",todo:"مهام الأسبوع",kpis:"المؤشرات",targets:"الأهداف",changes:"أوامر التغيير"}};
 let lang="en";
 let langStored=false;
 try{const v=localStorage.getItem("sp-lang");langStored=!!v;lang=v==="ar"?"ar":"en"}catch(e){}
@@ -207,7 +207,7 @@ function buildModel(BL){
  BL.items.forEach(i=>items[i.id]=i);BL.areas.forEach(a=>areas[a.id]=a);BL.acts.forEach(a=>acts[a.id]=a);BL.trades.forEach(x=>trades[x.id]=x);
  const keys=[];let bac=0;
  for(const it of BL.items)for(const [area,q] of Object.entries(it.alloc||{}))for(const st of it.stages){
-  const v=q*it.rate*st.w/100;bac+=v;keys.push({k:`${it.id}|${area}|${st.id}`,it,area,st,q,v,act:acts[st.act]});
+  const v=q*it.rate*st.w/100;bac+=v;keys.push({k:`${it.id}|${area}|${st.id}`,it,area,st,q,v,tw:it.tgt?(it.tgt.w||1)*st.w/100:0,act:acts[st.act]});
  }
  const kmap={};keys.forEach(k=>kmap[k.k]=k);
  const s0=dn(BL.start),w0=s0-((new Date(s0*864e5).getUTCDay()-(BL.weekStart||0)+7)%7);
@@ -317,19 +317,20 @@ function render(){
  ps.innerHTML=S.projects.map(p=>`<option value="${esc(p.id)}"${p.id===S.pid?" selected":""}>${esc(nm(p))}</option>`).join("");
  const ob=S.outbox.filter(o=>o.e.project===S.pid).length;$("#outbox").hidden=!ob;$("#outbox").textContent=t("outbox")(ob);
  const pend=S.entries.filter(e=>e.status==="entered").length;
- const tabs=S.owner?["overview","todo","weekly","approvals","photos","baseline","site"]:["site","todo","overview","weekly","photos","baseline"];
+ const tabs=S.owner?["overview","kpis","todo","targets","weekly","approvals","photos","changes","baseline","site"]:["site","todo","kpis","overview","weekly","photos","baseline"];
  $("#tabs").innerHTML=(S.BL?tabs:[]).map(v=>`<button class="tab" type="button" data-view="${v}" aria-current="${S.view===v}">${esc(t(v))}${v==="approvals"&&pend?` <span class="pill warn">${pend}</span>`:""}</button>`).join("");
  const m=$("#main");
  if(S.err==="signedOut"){m.innerHTML=`<div class="empty">${esc(t("signedOut"))}</div>`;return}
  if(!S.loaded){m.innerHTML=`<div class="empty">${S.err?esc(t("loadFail")):"Loading project…"}</div>`;return}
  if(!S.BL){if(S.owner)vSetup(m);else m.innerHTML=`<div class="empty">${esc(t("noProject"))}</div>`;return}
- ({site:vSite,todo:vTodo,overview:vOverview,weekly:vWeekly,approvals:vApprovals,photos:vPhotos,baseline:vBaseline}[S.view]||vSite)(m);
+ (({site:vSite,todo:vTodo,kpis:vKpis,targets:vTargets,changes:vChanges,overview:M.bac>0?vOverview:vKpis,weekly:M.bac>0?vWeekly:vKpis,weekly:vWeekly,approvals:vApprovals,photos:vPhotos,baseline:vBaseline}[S.view]||vSite))(m);
 }
 
 /* ---------- SITE ---------- */
 function areaStats(area,list,d){
  const st=stateAt(d,list);let v=0,e=0,p=0;
- for(const K of M.keys)if(K.area===area){v+=K.v;e+=K.v*(st[K.k]||0);p+=K.v*plannedFrac(K.act,d)}
+ const W=K=>M.bac>0?K.v:K.tw;
+ for(const K of M.keys)if(K.area===area){v+=W(K);e+=W(K)*(st[K.k]||0);p+=W(K)*plannedFrac(K.act,d)}
  return {a:v?e/v:0,p:v?p/v:0,n:M.keys.filter(K=>K.area===area).length};
 }
 function vSite(m){
@@ -339,7 +340,7 @@ function vSite(m){
   const today=new Set(list.filter(e=>e.date===d).map(e=>e.area));
   m.innerHTML=`<div class="row"><h1>${esc(t("pickArea"))}</h1></div>
   <div class="row" style="margin-top:12px"><label class="row small muted">${esc(t("date"))} <input type="date" id="dPick" value="${esc(d)}" max="${localToday()}"></label></div>${roNote}
-  <div class="areas">${S.BL.areas.map(a=>{const s=areaStats(a.id,list,d);if(!s.n)return"";
+  <div class="areas">${S.BL.areas.map(a=>{const s=areaStats(a.id,list,d);if(!s.n&&a.id!=="GEN")return"";
    return `<button class="area" type="button" data-area="${esc(a.id)}">${today.has(a.id)?`<span class="today" title="${esc(t("updatedToday"))}"></span>`:""}<b>${esc(nm(a))}</b>
    <span class="pc">${pct(s.a)}</span><span class="meter plan"><span style="width:${s.a*100}%"></span><i class="pl" style="inset-inline-start:${s.p*100}%"></i></span></button>`}).join("")}</div>`;
   return;
@@ -356,12 +357,12 @@ function vSite(m){
  ${fallback?`<p class="note">${esc(t("nothingNow"))}</p>`:""}${its.length?"":`<p class="empty">${esc(t("noItems"))}</p>`}
  ${S.BL.trades.map(tr=>{const g=shown.filter(i=>i.trade===tr.id);if(!g.length)return"";
   return `<div class="trade-h">${esc(nm(tr))}</div><div class="items">${g.map(i=>{const q=i.alloc[S.area];
-   return `<button class="item" type="button" data-item="${esc(i.id)}"><div class="hd"><b>${esc(nm(i))}</b><span class="q">${esc(num(q))} ${esc(U(i.unit))}</span></div>
+   return `<button class="item" type="button" data-item="${esc(i.id)}"><div class="hd"><b>${esc(nm(i))}</b><span class="q">${i.mode==="check"?(lang==="ar"?"هدف":"Target"):i.mode==="pct"&&i.tgt?"%":esc(num(q))+" "+esc(U(i.unit))}</span></div>
    ${i.stages.map(s=>{const f=st[`${i.id}|${S.area}|${s.id}`]||0;return `<div class="stg"><span>${esc(i.stages.length>1?nm(s):t("done"))}</span><span class="meter"><span style="width:${f*100}%"></span></span><span class="v">${pct(f)}</span></div>`}).join("")}</button>`}).join("")}</div>`}).join("")}
  ${todays.length?`<section><h2>${esc(t("todayHere"))}</h2><div>${todays.map(e=>entryRow(e,true)).join("")}</div></section>`:""}`;
 }
 function entryText(e){
- const it=M.items[e.item];if(e.kind==="photo"||!it)return t("photoOnly");
+ const it=M.items[e.item];if(e.kind==="photo"||!it)return e.photos?.length||e.localPhotos?.length?t("photoOnly"):(lang==="ar"?"ملاحظة":"Note");
  const K=M.kmap[`${e.item}|${e.area}|${e.stage}`],s=it.stages.find(x=>x.id===e.stage);
  const stg=it.stages.length>1&&s?` · ${nm(s)}`:"";
  const val=e.kind==="add"?`+${num(+e.val)} ${U(it.unit)}`:`→ ${pct(+e.val)}${K&&it.mode==="qty"?` (${num(K.q*e.val)} ${U(it.unit)})`:""}`;
@@ -386,27 +387,29 @@ function openSheet(itemId,photoOnly){
  const list=allEntries(),st=stateAt(S.date,list);
  const it=photoOnly?null:M.items[itemId];const q=it?it.alloc[S.area]:0;
  let stage=null;
+ if(it&&it.mode==="check"){}
  if(it){const open=it.stages.filter(s=>(st[`${it.id}|${S.area}|${s.id}`]||0)<1);
   stage=(open.find(s=>M.acts[s.act]&&dn(M.acts[s.act].s)<=dn(S.date))||open[0]||it.stages[0]).id}
- const photos=[];let val=it&&it.mode==="pct"?null:0;
+ const photos=[];let val=it&&(it.mode==="pct"||it.mode==="check")?null:0;
  const L=$("#layer");
  const draw=()=>{
   const cur=it?(st[`${it.id}|${S.area}|${stage}`]||0):0;
-  if(it&&it.mode==="pct"&&val===null)val=Math.round(cur*100);
+  if(it&&(it.mode==="pct"||it.mode==="check")&&val===null)val=Math.round(cur*100);
   const after=it?(it.mode==="qty"?clamp(cur+(+val||0)/q):(val/100)):0;
   const remain=it?Math.max(0,q*(1-cur)):0;
   const steps=it?(it.unit==="no."?[1,2,5]:it.unit==="kg"?[10,25,50]:[1,5,10]):[];
   L.innerHTML=`<div class="scrim" id="scrim"><form class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="${esc(it?nm(it):t("areaPhoto"))}">
    <div><div class="small muted">${esc(nm(M.areas[S.area]))} · ${esc(fmtD(S.date))}</div><h2>${esc(it?nm(it):t("areaPhoto"))}</h2>
-   ${it?`<div class="small muted">BOQ ${esc(it.code)} · ${esc(num(q))} ${esc(U(it.unit))}</div>`:""}</div>
+   ${it?`<div class="small muted">${it.tgt?`${lang==="ar"?"هدف حتى":"Target due"} ${esc(fmtD(M.acts[it.stages[0].act]?.e||S.date))}${it.mode==="qty"?` · ${esc(num(q))} ${esc(U(it.unit))}`:""}`:`BOQ ${esc(it.code)} · ${esc(num(q))} ${esc(U(it.unit))}`}</div>`:""}</div>
    ${it&&it.stages.length>1?`<div><div class="small muted" style="margin-bottom:6px">${esc(t("stage"))}</div><div class="seg">${it.stages.map(s=>{const f=st[`${it.id}|${S.area}|${s.id}`]||0;return `<button type="button" data-stage="${esc(s.id)}" aria-pressed="${s.id===stage}">${esc(nm(s))}<br><span class="small">${pct(f)}</span></button>`}).join("")}</div></div>`:""}
-   ${it?`<div class="note">${esc(t("done"))}: <b>${esc(num(q*cur))} ${esc(t("of"))} ${esc(num(q))} ${esc(U(it.unit))}</b> (${pct(cur)})</div>`:""}
+   ${it&&it.mode!=="check"?`<div class="note">${esc(t("done"))}: <b>${esc(num(q*cur))} ${esc(t("of"))} ${esc(num(q))} ${esc(U(it.unit))}</b> (${pct(cur)})</div>`:""}
    ${it&&it.mode==="qty"?`<label><div class="small muted" style="margin-bottom:6px">${esc(t("todayQty"))} (${esc(U(it.unit))})</div>
      <input class="big" id="qty" type="number" inputmode="decimal" min="0" step="any" value="${val?esc(val):""}" placeholder="0"></label>
      <div class="quick">${steps.map(s=>`<button class="btn ghost" type="button" data-add="${s}">+${s}</button>`).join("")}<button class="btn mint" type="button" data-add="rest">${esc(t("remaining"))}</button></div>`:""}
    ${it&&it.mode==="pct"?`<label><div class="small muted">${esc(t("setPct"))}</div><div class="big" style="display:flex;align-items:center;justify-content:center;border-radius:10px">${val}%</div>
      <input type="range" id="rng" min="0" max="100" step="5" value="${val}"></label>
      <div class="quick">${[25,50,75,100].map(s=>`<button class="btn ghost" type="button" data-pct="${s}">${s}%</button>`).join("")}</div>`:""}
+   ${it&&it.mode==="check"?`<div class="quick">${[[0,lang==="ar"?"لم يتم":"Not yet"],[100,lang==="ar"?"تم ✓":"Done ✓"]].map(([s,l])=>`<button class="btn ${val===s?"pri":"ghost"}" style="flex:1;min-height:56px" type="button" data-pct="${s}" aria-pressed="${val===s}">${l}</button>`).join("")}</div>`:""}
    ${it?`<div class="after">${esc(t("after"))}: ${pct(after)}</div><span class="meter"><span style="width:${after*100}%"></span></span>`:""}
    <label><div class="small muted" style="margin-bottom:6px">${esc(t("note"))}</div><textarea id="note" rows="2" style="width:100%" placeholder="${esc(t("notePh"))}"></textarea></label>
    ${S.assets?`<div><label class="btn ghost" style="width:100%">${ICON.cam} ${esc(t("addPhotos"))}<input id="ph" type="file" accept="image/*" capture="environment" multiple hidden></label>
@@ -416,7 +419,7 @@ function openSheet(itemId,photoOnly){
   const nt=$("#note");nt.value=noteVal;nt.oninput=()=>noteVal=nt.value;
   const qi=$("#qty");if(qi)qi.oninput=()=>{val=qi.value;const a=clamp(cur+(+val||0)/q);L.querySelector(".after").textContent=`${t("after")}: ${pct(a)}`;L.querySelector(".sheet>.meter>span").style.width=a*100+"%"};
   const rg=$("#rng");if(rg)rg.oninput=()=>{val=+rg.value;draw()};
-  L.querySelectorAll("[data-stage]").forEach(b=>b.onclick=()=>{stage=b.dataset.stage;if(it.mode==="pct")val=null;draw()});
+  L.querySelectorAll("[data-stage]").forEach(b=>b.onclick=()=>{stage=b.dataset.stage;if(it.mode!=="qty")val=null;draw()});
   L.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{val=b.dataset.add==="rest"?+remain.toFixed(2):+((+val||0)+ +b.dataset.add).toFixed(2);draw()});
   L.querySelectorAll("[data-pct]").forEach(b=>b.onclick=()=>{val=+b.dataset.pct;draw()});
   const ph=$("#ph");if(ph)ph.onchange=async()=>{for(const f of ph.files){try{photos.push(await blobToUrl(await compress(f)))}catch(e){toast("Photo could not be read")}}draw()};
@@ -426,7 +429,7 @@ function openSheet(itemId,photoOnly){
    let kind="photo",v=0;
    if(it){if(it.mode==="qty"){v=Math.min(+val||0,remain);kind="add";if(!(v>0)&&!photos.length){toast(lang==="ar"?"أدخل الكمية":"Enter a quantity");return}if(!(v>0))kind="photo"}
     else{v=clamp(val/100);kind="set";if(Math.abs(v-cur)<1e-9&&!photos.length&&!noteVal){toast(lang==="ar"?"غيّر النسبة":"Change the percentage");return}}}
-   else if(!photos.length){toast(lang==="ar"?"أضف صورة":"Add a photo");return}
+   else if(!photos.length&&!noteVal.trim()){toast(lang==="ar"?"أضف صورة أو ملاحظة":"Add a photo or a note");return}
    $("#saveBtn").disabled=true;$("#saveBtn").textContent=t("saving");
    const e={id:S.date.replace(/-/g,"")+"-"+uid(),project:S.pid,item:it?it.id:"",area:S.area,stage:it?stage:"",date:S.date,kind,val:kind==="photo"?0:+v.toFixed(4),
     note:noteVal.trim().slice(0,500),by:S.me||"",at:new Date().toISOString(),status:"entered"};
@@ -512,7 +515,7 @@ function vWeekly(m){
   g.v+=K.v*(pf-af);g.tot+=K.v;g.pv+=K.v*pf;g.ev+=K.v*af;g.areas.add(K.area)}
  const behind=Object.values(gaps).sort((a,b)=>b.v-a.v).slice(0,10);
  const wk=list.filter(e=>e.date>=ws&&e.date<=we);const ph=wk.flatMap(e=>photosOf(e).map(u=>({u,e})));
- const actsW=S.BL.acts.filter(a=>a.s<=we&&a.e>=ws);
+ const actsW=S.BL.acts.filter(a=>!a.tg&&a.s<=we&&a.e>=ws);
  const row=(name,o1,o0,oP)=>{if(!o1||!o1.bac)return"";const a=o1.ev/o1.bac,p=oP.pv/oP.bac,da=(o1.ev-(o0?.ev||0))/o1.bac,dp=(oP.pv-(o0?.pv||0))/o1.bac;
   return `<tr><td>${esc(name)}</td><td class="n">${pct(p,1)}</td><td class="n">${pct(a,1)}</td><td class="n ${a-p<-.005?"neg":""}">${((a-p)*100).toFixed(1)}</td><td class="n">${pct(dp,1)}</td><td class="n">${pct(da,1)}</td></tr>`};
  const head=`<thead><tr><th></th><th class="n">Planned to date</th><th class="n">Actual to date</th><th class="n">Gap (pts)</th><th class="n">Planned this week</th><th class="n">Done this week</th></tr></thead>`;
@@ -613,6 +616,235 @@ function vTodo(m){
  m.dataset.todo=text;
 }
 
+/* ---------- TARGETS, KPIs, NEW PROJECTS, CHANGE ORDERS ---------- */
+/* A target is stored like a BOQ item with no money: rate 0, one stage "all", its own activity spanning the week or
+   month it is due. So the site screens, offline outbox, photos and the to-do note all work for it unchanged, and it
+   never moves the BOQ value %. Target score = Σ weight × done / Σ weight. */
+const KT={
+ en:{targets:"Targets",kpis:"KPIs",changes:"Changes",week:"Week",month:"Month",score:"Targets achieved",planned:"planned by now",
+  completed:"completed",reportDays:"Days with a site report",photos:"Photos",entries:"Progress entries",areasU:"Areas updated",lastU:"Last update",
+  overdue:"Still open from earlier",noTargets:"No targets set for this period.",byEng:"By site engineer",engineer:"Engineer",days:"Days reported",
+  status:"Status",done:"Done",notStarted:"Not started",inProg:"In progress",boq:"BOQ value progress",thisPer:"this period",copy:"Copy KPI summary",
+  copied:"KPI summary copied — paste it into WhatsApp",target:"Target",area:"Area",weight:"Weight",progress:"Progress",offDay:"day off"},
+ ar:{targets:"الأهداف",kpis:"المؤشرات",changes:"التعديلات",week:"أسبوع",month:"شهر",score:"نسبة تحقيق الأهداف",planned:"المخطط حتى الآن",
+  completed:"مكتمل",reportDays:"أيام بها تقرير من الموقع",photos:"الصور",entries:"إدخالات التقدم",areasU:"أماكن تم تحديثها",lastU:"آخر تحديث",
+  overdue:"مفتوح من فترات سابقة",noTargets:"لا توجد أهداف لهذه الفترة.",byEng:"حسب مهندس الموقع",engineer:"المهندس",days:"أيام التقارير",
+  status:"الحالة",done:"تم",notStarted:"لم يبدأ",inProg:"جاري",boq:"تقدم قيمة المقايسة",thisPer:"هذه الفترة",copy:"نسخ ملخص المؤشرات",
+  copied:"تم النسخ — الصقه في واتساب",target:"الهدف",area:"المكان",weight:"الأهمية",progress:"التقدم",offDay:"إجازة"}};
+const kt=k=>KT[lang][k]??KT.en[k];
+const WEIGHTS=[[1,"Normal"],[2,"Important"],[3,"Critical"]];
+const offDays=()=>S.BL.offDays||[5];// Friday off by default (Egypt)
+const isTarget=i=>!!(i&&i.tgt);
+
+/* periods: {kind:"w"|"m", n} → [start,end] (ISO dates) */
+function perRange(P){
+ if(P.kind==="w")return weekRange(P.n);
+ const y=+P.n.slice(0,4),mo=+P.n.slice(5,7);const s=Date.UTC(y,mo-1,1)/864e5,e=Date.UTC(y,mo,1)/864e5-1;return [ds(s),ds(e)];
+}
+const perLabel=P=>{const [s,e]=perRange(P);return P.kind==="w"?`${kt("week")} ${P.n} · ${fmtD(s)} – ${fmtD(e)}`:
+ new Date(dn(s)*864e5).toLocaleDateString(lang==="ar"?"ar-EG-u-nu-latn":"en-GB",{month:"long",year:"numeric",timeZone:"UTC"})};
+const perStep=(P,k)=>{if(P.kind==="w")return {kind:"w",n:P.n+k};const y=+P.n.slice(0,4),mo=+P.n.slice(5,7)-1+k;
+ const d=new Date(Date.UTC(y,mo,1));return {kind:"m",n:d.toISOString().slice(0,7)}};
+const perNow=kind=>kind==="w"?{kind:"w",n:Math.max(1,weekOf(localToday()))}:{kind:"m",n:localToday().slice(0,7)};
+function perOf(it){const a=M.acts[it.stages[0].act];return a}
+
+/* the KPI numbers for one period (used by the screen, the WhatsApp text and tests) */
+function kpiModel(P,list){
+ const [ps,pe]=perRange(P),today=localToday(),asOf=today<pe?today:pe,started=today>=ps;
+ const st=stateAt(asOf,list);
+ const tg=[],open=[];
+ for(const it of S.BL.items){if(!isTarget(it))continue;const a=perOf(it);if(!a)continue;
+  for(const [area,q] of Object.entries(it.alloc||{})){const k=`${it.id}|${area}|all`,f=st[k]||0,w=it.tgt.w||1;
+   const row={it,area,q,f,w,a,pf:plannedFrac(a,asOf)};
+   if(a.e>=ps&&a.e<=pe)tg.push(row);else if(a.e<ps&&f<1-1e-6)open.push(row)}}// a target belongs to the period it is due in
+ const W=tg.reduce((s,r)=>s+r.w,0);
+ const score=W?tg.reduce((s,r)=>s+r.w*r.f,0)/W:null,plan=W?tg.reduce((s,r)=>s+r.w*(started?r.pf:0),0)/W:null;
+ const inP=list.filter(e=>e.date>=ps&&e.date<=asOf);
+ let work=0;for(let d=Math.max(dn(ps),dn(S.BL.start));d<=dn(asOf);d++){const wd=new Date(d*864e5).getUTCDay();if(!offDays().includes(wd))work++}
+ if(!started)work=0;
+ const days=new Set(inP.map(e=>e.date)),ph=inP.reduce((s,e)=>s+photosOf(e).length,0);
+ const eng={};for(const e of inP){const o=eng[e.by]||(eng[e.by]={by:e.by,n:0,days:new Set(),ph:0,last:""});o.n+=e.kind!=="photo"?1:0;o.days.add(e.date);o.ph+=photosOf(e).length;if(e.date>o.last)o.last=e.date}
+ let boq=null;if(M.bac>0&&started){const prev=ds(dn(ps)-1);const A1=agg(asOf,list).all,A0=agg(prev,list).all,P1=agg(asOf,list).all;
+  boq={act:A1.ev/A1.bac,pl:P1.pv/P1.bac,dAct:(A1.ev-A0.ev)/A1.bac,dPl:(P1.pv-A0.pv)/A1.bac}}
+ return {ps,pe,asOf,started,tg,open,score,plan,done:tg.filter(r=>r.f>=1-1e-6).length,work,days:[...days].filter(d=>!offDays().includes(new Date(dn(d)*864e5).getUTCDay())).length,
+  ph,entries:inP.filter(e=>e.kind!=="photo").length,areas:new Set(inP.map(e=>e.area)).size,last:list.filter(e=>e.date<=asOf).at(-1)?.date||null,eng:Object.values(eng),boq};
+}
+const tgStatus=r=>r.f>=1-1e-6?`<span class="pos">${esc(kt("done"))}</span>`:r.f>0?esc(kt("inProg"))+" "+pct(r.f):`<span class="${r.pf>0?"neg":"muted"}">${esc(kt("notStarted"))}</span>`;
+const tgVal=r=>r.it.mode==="qty"?`${num(r.f*r.q)} / ${num(r.q)} ${U(r.it.unit)}`:r.it.mode==="check"?(r.f>=1?"✓":"–"):pct(r.f);
+
+function vKpis(m){
+ const list=allEntries();if(!S.per)S.per=perNow("w");const P=S.per,K=kpiModel(P,list);
+ const pctOrDash=x=>x===null?"–":pct(x);
+ const gap=K.score!==null&&K.plan!==null?K.score-K.plan:0;
+ const rd=K.work?K.days/K.work:null;
+ const text=`${nm(S.BL)} — ${perLabel(P)}\n`+
+  (K.score!==null?`${kt("score")}: ${pct(K.score)} (${kt("planned")} ${pct(K.plan)}) · ${K.done}/${K.tg.length} ${kt("completed")}\n`:"")+
+  (K.boq&&S.owner?`${kt("boq")}: ${pct(K.boq.act,1)} vs ${pct(K.boq.pl,1)} planned · ${kt("thisPer")} ${pct(K.boq.dAct,1)} vs ${pct(K.boq.dPl,1)}\n`:"")+
+  `${kt("reportDays")}: ${K.days}/${K.work} · ${kt("entries")}: ${K.entries} · ${kt("photos")}: ${K.ph}\n`+
+  (K.tg.length?K.tg.map(r=>`${r.f>=1-1e-6?"✅":r.f>0?"🟡":"⬜"} ${nm(r.it)} — ${nm(M.areas[r.area])}: ${tgVal(r)}`).join("\n"):"")+
+  (K.open.length?`\n${kt("overdue")}:\n`+K.open.map(r=>`⚠ ${nm(r.it)} — ${nm(M.areas[r.area])}: ${tgVal(r)}`).join("\n"):"");
+ m.innerHTML=`<div class="row"><div class="chips"><button class="chip" type="button" data-kper="w" aria-pressed="${P.kind==="w"}">${esc(kt("week"))}</button><button class="chip" type="button" data-kper="m" aria-pressed="${P.kind==="m"}">${esc(kt("month"))}</button></div>
+  <button class="btn ghost sm" type="button" data-kstep="-1" aria-label="Previous">‹</button><b>${esc(perLabel(P))}</b><button class="btn ghost sm" type="button" data-kstep="1" aria-label="Next">›</button>
+  <button class="btn sm sp" type="button" id="kCopy">${esc(kt("copy"))}</button></div>
+ <h1 style="margin-top:14px">${K.score===null?esc(kt("noTargets")):`${pct(K.score)} ${esc(kt("score").toLowerCase())}`}</h1>
+ <p class="muted">${K.score!==null?`${esc(kt("planned"))}: ${pct(K.plan)} · ${K.done} / ${K.tg.length} ${esc(kt("completed"))}`:""}${S.owner&&K.score===null?` <button class="btn sm" type="button" data-view="targets">Set targets</button>`:""}</p>
+ <div class="kpis"><div class="kpi"><div class="n ${gap<-.1?"neg":""}">${pctOrDash(K.score)}</div><div class="l">${esc(kt("score"))}</div></div>
+  <div class="kpi"><div class="n ${rd!==null&&rd<.8?"neg":""}">${K.days}/${K.work}</div><div class="l">${esc(kt("reportDays"))}</div></div>
+  <div class="kpi"><div class="n">${K.ph}</div><div class="l">${esc(kt("photos"))}</div></div>
+  <div class="kpi"><div class="n">${K.entries}</div><div class="l">${esc(kt("entries"))} · ${K.areas} ${esc(kt("areasU").toLowerCase())}</div></div>
+  ${K.boq&&S.owner?`<div class="kpi"><div class="n ${K.boq.act<K.boq.pl-.005?"neg":""}">${pct(K.boq.act,1)}</div><div class="l">${esc(kt("boq"))} (plan ${pct(K.boq.pl,1)}); ${esc(kt("thisPer"))} +${pct(K.boq.dAct,1)} vs +${pct(K.boq.dPl,1)}</div></div>`:""}</div>
+ ${K.tg.length?`<section><h2>${esc(kt("targets"))}</h2><div class="scroll"><table class="stack"><thead><tr><th>${esc(kt("target"))}</th><th>${esc(kt("area"))}</th><th class="n">${esc(kt("progress"))}</th><th>${esc(kt("status"))}</th><th class="n">${esc(kt("weight"))}</th></tr></thead><tbody>
+  ${K.tg.map(r=>`<tr><td>${esc(nm(r.it))} <span class="muted small">· ${esc(nm(M.trades[r.it.trade]))}</span></td><td>${esc(nm(M.areas[r.area]))}</td><td class="n">${esc(tgVal(r))}</td><td>${tgStatus(r)}</td><td class="n">${r.w}</td></tr>`).join("")}</tbody></table></div></section>`:""}
+ ${K.open.length?`<section><h2 class="neg">${esc(kt("overdue"))}</h2><div class="scroll"><table class="stack"><tbody>${K.open.map(r=>`<tr><td>${esc(nm(r.it))}</td><td>${esc(nm(M.areas[r.area]))}</td><td class="n">${esc(tgVal(r))}</td><td>${esc(fmtD(r.a.e))}</td></tr>`).join("")}</tbody></table></div></section>`:""}
+ <section><h2>${esc(kt("byEng"))}</h2>${K.eng.length?`<div class="scroll"><table class="stack"><thead><tr><th>${esc(kt("engineer"))}</th><th class="n">${esc(kt("days"))}</th><th class="n">${esc(kt("entries"))}</th><th class="n">${esc(kt("photos"))}</th><th>${esc(kt("lastU"))}</th></tr></thead><tbody>
+  ${K.eng.map(o=>`<tr><td>${esc(who(o.by))}</td><td class="n">${o.days.size}/${K.work}</td><td class="n">${o.n}</td><td class="n">${o.ph}</td><td>${esc(fmtD(o.last))}</td></tr>`).join("")}</tbody></table></div>`:`<p class="muted">–</p>`}
+  <p class="small muted">Working days exclude ${offDays().map(d=>new Date(Date.UTC(2026,10,1+d)).toLocaleDateString("en-GB",{weekday:"long",timeZone:"UTC"})).join(", ")}. A day counts when the site saved at least one entry, photo or note.</p></section>`;
+ m.dataset.kpi=text;
+}
+
+/* ---------- TARGETS editor (manager) ---------- */
+function vTargets(m){
+ if(!S.per)S.per=perNow("w");const P=S.per,[ps,pe]=perRange(P),list=allEntries(),K=kpiModel(P,list);
+ const areaOpts=S.BL.areas.map(a=>`<option value="${esc(a.id)}">${esc(nm(a))}</option>`).join("");
+ const tradeOpts=S.BL.trades.map(tr=>`<option value="${esc(tr.id)}">${esc(nm(tr))}</option>`).join("");
+ const prevK=kpiModel(perStep(P,-1),list);const carry=prevK.tg.filter(r=>r.f<1-1e-6);
+ m.innerHTML=`<div class="row"><div class="chips"><button class="chip" type="button" data-kper="w" aria-pressed="${P.kind==="w"}">Week</button><button class="chip" type="button" data-kper="m" aria-pressed="${P.kind==="m"}">Month</button></div>
+  <button class="btn ghost sm" type="button" data-kstep="-1" aria-label="Previous">‹</button><b>${esc(perLabel(P))}</b><button class="btn ghost sm" type="button" data-kstep="1" aria-label="Next">›</button></div>
+ <h1 style="margin-top:14px">Targets for this ${P.kind==="w"?"week":"month"}</h1>
+ <p class="muted">What the site must achieve by ${esc(fmtD(pe))}. Works with or without a BOQ: describe the work, where, and how you'll measure it. The site engineer sees these in Arabic on the area screen and in the to-do note, and reports against them.</p>
+ ${K.tg.length?`<div class="scroll" style="margin-top:12px"><table class="stack"><thead><tr><th>Target</th><th>Area</th><th class="n">Progress</th><th>Status</th><th class="n">Weight</th><th></th></tr></thead><tbody>
+  ${K.tg.map(r=>`<tr><td>${esc(r.it.en)}${r.it.ar&&r.it.ar!==r.it.en?`<div class="small muted" lang="ar" dir="rtl">${esc(r.it.ar)}</div>`:""}<div class="small muted">${esc(nm(M.trades[r.it.trade]))}${r.it.tgt.from?" · carried over":""}${r.it.tgt.co?" · "+esc(r.it.tgt.co):""}</div></td><td>${esc(nm(M.areas[r.area]))}</td><td class="n">${esc(tgVal(r))}</td><td>${tgStatus(r)}</td><td class="n">${r.w}</td>
+   <td><button class="btn ghost sm" type="button" data-tgdel="${esc(r.it.id)}">Delete</button></td></tr>`).join("")}</tbody></table></div>`:`<p class="note" style="margin-top:12px">${esc(kt("noTargets"))}</p>`}
+ ${carry.length?`<p style="margin-top:10px"><button class="btn" type="button" id="tgCarry">Carry over ${carry.length} unfinished target${carry.length>1?"s":""} from the previous ${P.kind==="w"?"week":"month"}</button></p>`:""}
+ <section><h2>Add a target</h2><form id="tgForm" class="card" style="display:grid;gap:10px">
+  <label>What must be done (English)<input name="en" required maxlength="140" style="width:100%" placeholder="e.g. Finish electrical conduits in all bedrooms"></label>
+  <label>بالعربي (اختياري — ما يراه مهندس الموقع)<input name="ar" maxlength="140" dir="rtl" lang="ar" style="width:100%" placeholder="مثال: الانتهاء من مواسير الكهرباء في كل غرف النوم"></label>
+  <div class="row"><label>Trade <select name="trade">${tradeOpts}</select></label><label>Area <select name="area">${areaOpts}</select></label>
+   <label>Weight <select name="w">${WEIGHTS.map(([v,l])=>`<option value="${v}">${l}</option>`).join("")}</select></label></div>
+  <div class="row"><label>Measured by <select name="mode"><option value="check">Done / not done</option><option value="qty">Quantity</option><option value="pct">Percent</option></select></label>
+   <label data-q>Quantity <input name="qty" type="number" min="0" step="any" style="width:7em"></label>
+   <label data-q>Unit <select name="unit">${["m²","m","no.","kg","LS"].map(u=>`<option>${u}</option>`).join("")}</select></label></div>
+  <div class="row"><button class="btn pri" type="submit">Add target</button><span class="small muted">Due by ${esc(fmtD(pe))}</span></div></form></section>`;
+ const f=$("#tgForm");const sync=()=>f.querySelectorAll("[data-q]").forEach(x=>x.hidden=f.mode.value!=="qty");f.mode.onchange=sync;sync();
+ f.onsubmit=async ev=>{ev.preventDefault();const mode=f.mode.value,qty=mode==="qty"?+f.qty.value:1;
+  if(mode==="qty"&&!(qty>0)){toast("Enter the target quantity");return}
+  await saveTargets([{en:f.en.value.trim(),ar:f.ar.value.trim()||f.en.value.trim(),trade:f.trade.value,area:f.area.value,w:+f.w.value,mode,qty,unit:mode==="qty"?f.unit.value:mode==="pct"?"%":""}],P);
+ };
+}
+function newTarget(t,P){
+ const [ps,pe]=perRange(P),id="T"+uid();
+ const it={id,code:"T",trade:t.trade,en:t.en,ar:t.ar||t.en,unit:t.unit||"",qty:t.qty,rate:0,mode:t.mode,
+  stages:[{id:"all",en:"All",ar:"الكل",w:100,act:"tg-"+id}],alloc:{[t.area]:t.qty},tgt:{per:P.kind+P.n,w:t.w||1,at:new Date().toISOString(),by:S.me||""}};
+ if(t.from)it.tgt.from=t.from;if(t.co)it.tgt.co=t.co;
+ return {it,act:{id:"tg-"+id,en:t.en,ar:t.ar||t.en,s:ps,e:pe,trade:t.trade,tg:true}};
+}
+async function saveBaseline(b,msg){try{await S.db.doc("projects/"+S.pid).set(b);toast(msg)}catch(e){toast("Could not save: "+(e?.code||"error"))}}
+async function saveTargets(arr,P){
+ const b=structuredClone(S.BL);for(const t of arr){const {it,act}=newTarget(t,P);b.items.push(it);b.acts.push(act)}
+ await saveBaseline(b,arr.length>1?`${arr.length} targets added`:"Target added");
+}
+function ensureGeneralTrade(b){if(!b.trades.some(x=>x.id==="G"))b.trades.push({id:"G",en:"General",ar:"عام"})}
+
+/* ---------- NEW PROJECT (works with no BOQ and no drawings) ---------- */
+function newProjectForm(){
+ return `<form id="npForm" class="card" style="display:grid;gap:10px;margin-top:14px"><h2>Start a new project</h2>
+  <p class="muted small">Only a name and dates are needed. Add a BOQ, drawings and schedule later if you get them; until then, set weekly or monthly targets and the site reports progress and photos against them.</p>
+  <div class="row"><label>Name (English)<input name="en" required maxlength="80"></label><label>الاسم بالعربي<input name="ar" dir="rtl" maxlength="80"></label></div>
+  <label>Location<input name="loc" maxlength="120" style="width:100%"></label>
+  <div class="row"><label>Start <input name="s" type="date" required value="${localToday()}"></label><label>Planned finish <input name="e" type="date" required></label>
+   <label>Week starts <select name="ws"><option value="6">Saturday</option><option value="0" selected>Sunday</option></select></label></div>
+  <label>Areas — one per line, optional (e.g. "Ground floor", "Villa 3", "Bathroom 1"). "Whole site" is always added.
+   <textarea name="areas" rows="4" style="width:100%" placeholder="Ground floor&#10;First floor&#10;Roof"></textarea></label>
+  <div><button class="btn pri" type="submit">Create project</button></div></form>`;
+}
+async function createProject(f){
+ const en=f.en.value.trim(),s=f.s.value,e=f.e.value;if(!en||!s||!e||e<s){toast("Check the name and dates");return}
+ const id=(en.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,24)||"project")+"-"+uid().slice(-4);
+ const names=f.areas.value.split("\n").map(x=>x.trim()).filter(Boolean).slice(0,200);
+ const areas=names.map((n,i)=>({id:"A"+String(i+1).padStart(2,"0"),en:n,ar:n,kind:"dry"}));
+ areas.push({id:"GEN",en:"Whole site",ar:"الموقع بالكامل",kind:"gen"});
+ const b={id,en,ar:f.ar.value.trim()||en,location:f.loc.value.trim(),currency:"EGP",start:s,end:e,weekStart:+f.ws.value,status:"draft",rev:1,
+  areas,trades:[{id:"G",en:"General",ar:"عام"},{id:"F",en:"Finishes",ar:"التشطيبات"},{id:"E",en:"Electrical",ar:"الكهرباء"},{id:"P",en:"Plumbing",ar:"السباكة"},{id:"H",en:"HVAC",ar:"التكييف"}],
+  acts:[],items:[],cos:[]};
+ try{await S.db.doc("projects/"+id).set(b);S.pid=id;try{localStorage.setItem("sp-proj",id)}catch(e){}S.BL=b;M=buildModel(b);subEntries();S.view="targets";S.per=perNow("w");render();toast("Project created — now set this week's targets")}
+ catch(err){toast("Could not create: "+(err?.code||"error"))}
+}
+
+/* ---------- CHANGE ORDERS / VARIATIONS ---------- */
+/* Register of change orders. Approving one applies its lines to the baseline (new BOQ lines, changed quantities, new
+   finish date) and keeps a copy of the previous baseline as a revision, so reports can always show original vs current. */
+function vChanges(m){
+ const cos=S.BL.cos||[];const orig=S.BL.origBac??M.bac;
+ const appr=cos.filter(c=>c.status==="approved"),pend=cos.filter(c=>c.status==="pending");
+ const sum=a=>a.reduce((s,c)=>s+(+c.value||0),0);
+ const itemOpts=S.BL.items.filter(i=>!isTarget(i)).map(i=>`<option value="${esc(i.id)}">${esc(i.id)} · ${esc(i.en.slice(0,60))} (${esc(num(i.qty))} ${esc(i.unit)})</option>`).join("");
+ m.innerHTML=`<h1>Change orders &amp; modifications</h1>
+ <p class="muted">Log every variation the client or consultant asks for — even before it is priced. Approving one updates the baseline (new lines, changed quantities, extra days) and keeps the previous version, so reports show original vs current.</p>
+ <div class="kpis"><div class="kpi"><div class="n">${esc(money(orig))}</div><div class="l">Original contract (tracked BOQ)</div></div>
+  <div class="kpi"><div class="n">${sum(appr)>=0?"+":""}${esc(money(sum(appr)).replace("EGP ",""))}</div><div class="l">${appr.length} approved change${appr.length===1?"":"s"}</div></div>
+  <div class="kpi"><div class="n">${esc(money(M.bac))}</div><div class="l">Current baseline</div></div>
+  <div class="kpi"><div class="n ${pend.length?"neg":""}">${pend.length}</div><div class="l">Pending · ${esc(money(sum(pend)))}</div></div></div>
+ ${cos.length?`<section><div class="scroll"><table class="stack"><thead><tr><th>No.</th><th>Date</th><th>Description</th><th>Type</th><th class="n">Value</th><th class="n">Days</th><th>Status</th><th></th></tr></thead><tbody>
+  ${cos.slice().reverse().map(c=>`<tr><td>${esc(c.id)}</td><td>${esc(fmtD(c.date))}</td><td>${esc(c.title)}${c.note?`<div class="small muted">${esc(c.note)}</div>`:""}${(c.lines||[]).map(l=>`<div class="small">${l.type==="add"?`+ new line: ${esc(l.en)} ${esc(num(l.qty))} ${esc(l.unit)} × ${esc(num(l.rate))}`:l.type==="qty"?`${esc(l.item)}: qty → ${esc(num(l.qty))}`:l.type==="omit"?`${esc(l.item)} omitted`:""}</div>`).join("")}</td>
+   <td>${esc(c.kind)}</td><td class="n">${esc(num(+c.value||0,0))}</td><td class="n">${+c.days||0}</td><td>${c.status==="approved"?`<span class="pos">approved</span> <span class="small muted">rev ${esc(c.rev||"")}</span>`:c.status==="rejected"?"rejected":`<span class="neg">pending</span>`}</td>
+   <td>${c.status==="pending"&&S.owner?`<button class="btn mint sm" type="button" data-coap="${esc(c.id)}">Approve &amp; apply</button> <button class="btn ghost sm" type="button" data-corej="${esc(c.id)}">Reject</button>`:""}</td></tr>`).join("")}</tbody></table></div></section>`:""}
+ ${S.owner?`<section><h2>New change order</h2><form id="coForm" class="card" style="display:grid;gap:10px">
+  <div class="row"><label>Description <input name="title" required maxlength="160" style="width:min(520px,80vw)" placeholder="e.g. Client adds false ceiling in master bedroom"></label></div>
+  <div class="row"><label>Type <select name="kind"><option>Addition</option><option>Omission</option><option>Modification</option><option>Time extension</option></select></label>
+   <label>Value (EGP, + or −) <input name="value" type="number" step="any" style="width:9em" value="0"></label><label>Extra days <input name="days" type="number" min="0" step="1" style="width:6em" value="0"></label>
+   <label>Requested by <input name="req" maxlength="60" placeholder="Client / consultant"></label></div>
+  <label>Note <input name="note" maxlength="300" style="width:100%"></label>
+  <details><summary>What changes in the BOQ (optional)</summary><div style="display:grid;gap:8px;margin-top:8px">
+   <div class="row"><b class="small">Add a new line:</b><input name="aen" placeholder="Description" maxlength="120"><select name="atrade">${S.BL.trades.map(tr=>`<option value="${esc(tr.id)}">${esc(tr.en)}</option>`).join("")}</select>
+    <input name="aqty" type="number" step="any" min="0" placeholder="Qty" style="width:6em"><select name="aunit">${["m²","m","no.","kg","LS"].map(u=>`<option>${u}</option>`).join("")}</select>
+    <input name="arate" type="number" step="any" min="0" placeholder="Rate" style="width:7em"><select name="aarea">${S.BL.areas.map(a=>`<option value="${esc(a.id)}">${esc(a.en)}</option>`).join("")}</select>
+    <select name="aact"><option value="">Schedule: from approval to project end</option>${S.BL.acts.filter(a=>!a.tg).map(a=>`<option value="${esc(a.id)}">${esc(a.en)}</option>`).join("")}</select></div>
+   ${itemOpts?`<div class="row"><b class="small">Change a quantity:</b><select name="qitem"><option value="">—</option>${itemOpts}</select><input name="qqty" type="number" step="any" min="0" placeholder="New total qty (0 = omit)" style="width:12em"></div>`:""}
+  </div></details>
+  <div><button class="btn pri" type="submit">Log change order</button> <span class="small muted">It stays pending until you approve it.</span></div></form></section>`:""}`;
+ const f=$("#coForm");if(f)f.onsubmit=async ev=>{ev.preventDefault();
+  const b=structuredClone(S.BL);b.cos=b.cos||[];const n=b.cos.length+1;const lines=[];
+  if(f.aen.value.trim()&&+f.aqty.value>0)lines.push({type:"add",en:f.aen.value.trim(),trade:f.atrade.value,qty:+f.aqty.value,unit:f.aunit.value,rate:+f.arate.value||0,area:f.aarea.value,act:f.aact.value});
+  if(f.qitem&&f.qitem.value&&f.qqty.value!=="")lines.push(+f.qqty.value===0?{type:"omit",item:f.qitem.value}:{type:"qty",item:f.qitem.value,qty:+f.qqty.value});
+  b.cos.push({id:"CO-"+String(n).padStart(2,"0"),date:localToday(),title:f.title.value.trim(),kind:f.kind.value,value:+f.value.value||0,days:+f.days.value||0,req:f.req.value.trim(),note:f.note.value.trim(),lines,status:"pending",by:S.me||""});
+  await saveBaseline(b,"Change order logged");
+ };
+}
+async function decideCO(id,approve){
+ const old=S.BL,b=structuredClone(old);const c=b.cos.find(x=>x.id===id);if(!c)return;
+ if(!approve){c.status="rejected";c.decidedAt=new Date().toISOString();await saveBaseline(b,"Change order rejected");return}
+ if(b.origBac==null)b.origBac=M.bac;
+ const warn=[];
+ for(const l of c.lines||[]){
+  if(l.type==="add"){const iid=c.id.replace("-","")+"."+(b.items.filter(i=>i.id.startsWith(c.id.replace("-","")+".")).length+1);let act=l.act;
+   if(!act){act="co-"+iid;b.acts.push({id:act,en:l.en,ar:l.en,s:localToday(),e:ds(dn(b.end)+(+c.days||0)),trade:l.trade})}
+   b.items.push({id:iid,code:iid,trade:l.trade,en:l.en,ar:l.en,unit:l.unit,qty:l.qty,rate:l.rate,mode:"qty",stages:[{id:"all",en:"All",ar:"الكل",w:100,act}],alloc:{[l.area]:l.qty},co:c.id})}
+  if(l.type==="qty"||l.type==="omit"){const it=b.items.find(i=>i.id===l.item);if(!it){warn.push(l.item+" not found");continue}
+   const nq=l.type==="omit"?0:l.qty,k=it.qty?nq/it.qty:0;it.history=(it.history||[]).concat({qty:it.qty,co:c.id});
+   for(const a of Object.keys(it.alloc))it.alloc[a]=+(it.alloc[a]*k).toFixed(3);it.qty=nq;it.co=c.id}
+ }
+ if(+c.days>0)b.end=ds(dn(b.end)+(+c.days));
+ b.rev=(+b.rev||1)+1;c.status="approved";c.rev=b.rev;c.decidedAt=new Date().toISOString();
+ try{await S.db.collection("revisions").doc(`${S.pid}-r${old.rev||1}`).set({project:S.pid,rev:old.rev||1,replacedBy:b.rev,reason:c.id+" "+c.title,at:new Date().toISOString(),baseline:old})}catch(e){}
+ await saveBaseline(b,`${c.id} applied — baseline revision ${b.rev}${warn.length?" ("+warn.join("; ")+")":""}`);
+}
+
+document.addEventListener("click",async ev=>{
+ const b=ev.target.closest("button");if(!b||!S.BL)return;
+ if(b.dataset.kper){S.per=perNow(b.dataset.kper);render();return}
+ if(b.dataset.kstep){S.per=perStep(S.per,+b.dataset.kstep);render();return}
+ if(b.id==="kCopy"){try{await navigator.clipboard.writeText($("#main").dataset.kpi||"");toast(kt("copied"))}catch(e){toast("Copy was blocked by the browser")}return}
+ if(b.dataset.tgdel){if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Tap again";return}
+  const id=b.dataset.tgdel,nb=structuredClone(S.BL);nb.items=nb.items.filter(i=>i.id!==id);nb.acts=nb.acts.filter(a=>a.id!=="tg-"+id);await saveBaseline(nb,"Target deleted");return}
+ if(b.id==="tgCarry"){const list=allEntries(),prev=kpiModel(perStep(S.per,-1),list).tg.filter(r=>r.f<1-1e-6);
+  await saveTargets(prev.map(r=>({en:r.it.en,ar:r.it.ar,trade:r.it.trade,area:r.area,w:r.w,mode:r.it.mode,unit:r.it.unit,
+   qty:r.it.mode==="qty"?+(r.q*(1-r.f)).toFixed(2):1,from:r.it.id})),S.per);return}
+ if(b.dataset.coap){b.disabled=true;await decideCO(b.dataset.coap,true);return}
+ if(b.dataset.corej){b.disabled=true;await decideCO(b.dataset.corej,false);return}
+ if(b.id==="newProj"){$("#npBox").innerHTML=newProjectForm();return}
+});
+document.addEventListener("submit",ev=>{if(ev.target.id==="npForm"){ev.preventDefault();createProject(ev.target)}});
+
 /* ---------- APPROVALS ---------- */
 function vApprovals(m){
  const list=allEntries().filter(e=>e.status!=="pending");
@@ -652,16 +884,16 @@ function vPhotos(m){
 /* ---------- BASELINE ---------- */
 function vBaseline(m){
  const d=localToday();const span=M.e0-M.s0+1;
- m.innerHTML=`<h1>Baseline: BOQ, areas and schedule</h1>
+ m.innerHTML=`${S.owner?`<div class="row" style="justify-content:flex-end"><button class="btn sm" type="button" id="newProj">+ New project</button></div><div id="npBox"></div>`:""}<h1>Baseline: BOQ, areas and schedule</h1>
  <p class="muted">${esc(nm(S.BL))} · ${esc(S.BL.location||"")} · ${S.BL.items.length} tracked BOQ lines · ${esc(money(M.bac))} · ${esc(fmtD(S.BL.start))} → ${esc(fmtD(S.BL.end))}</p>
  <p class="note">The split of each BOQ quantity across areas is a proposal taken from the drawings. Review it and tell Claude what to change; the schedule is a draft too.${(S.BL.notTracked||[]).map(x=>`<br>Not tracked: ${esc(x)}`).join("")}
  ${S.owner&&BUNDLES.some(x=>x.id===S.pid)?`<br><button class="btn sm" type="button" id="reimport" style="margin-top:8px">Load latest baseline file</button> <span class="small muted">(revision ${esc(S.BL.rev||1)}; site entries are kept)</span>`:""}</p>
  ${S.owner?`<section><h2>Room finish schedule</h2><p class="muted">Fill in each area's size and the finish of its floor, skirting, walls and ceiling in Excel. Importing it re-splits the BOQ quantities between areas by measured takeoff.${S.BL.finishSchedule?` Last imported with ${S.BL.finishSchedule.rooms.length} areas.`:""}</p>
   <div class="row"><button class="btn" type="button" id="fsDl">Download Excel schedule</button><label class="btn pri">Import filled schedule<input id="fsFile" type="file" accept=".xlsx" hidden></label></div></section>`:""}
- <section><h2>Schedule</h2><div class="gantt">${S.BL.acts.map(a=>{const s=(dn(a.s)-M.s0)/span*100,w=(dn(a.e)-dn(a.s)+1)/span*100,n=(dn(d)-M.s0)/span*100;
+ <section><h2>Schedule</h2><div class="gantt">${S.BL.acts.filter(a=>!a.tg).map(a=>{const s=(dn(a.s)-M.s0)/span*100,w=(dn(a.e)-dn(a.s)+1)/span*100,n=(dn(d)-M.s0)/span*100;
   return `<div class="gr"><span>${esc(nm(a))} <span class="muted">· ${esc(nm(M.trades[a.trade]))}</span></span><span class="gtrack"><span style="inset-inline-start:${s}%;width:${w}%"></span>${n>=0&&n<=100?`<i class="now" style="inset-inline-start:${n}%"></i>`:""}</span></div>`}).join("")}</div>
   <p class="small muted">Red line = today.</p></section>
- ${S.BL.trades.map(tr=>{const its=S.BL.items.filter(i=>i.trade===tr.id);const tot=its.reduce((s,i)=>s+i.qty*i.rate,0);
+ ${S.BL.trades.map(tr=>{const its=S.BL.items.filter(i=>i.trade===tr.id&&!i.tgt);if(!its.length)return"";const tot=its.reduce((s,i)=>s+i.qty*i.rate,0);
   return `<section><details${tr.id==="F"?" open":""}><summary>${esc(nm(tr))} · ${its.length} items · ${esc(money(tot))}</summary><div class="scroll"><table class="stack"><thead><tr><th>Code</th><th>Item</th><th class="n">Qty</th><th class="n">Rate</th><th class="n">Total</th><th>Tracked as</th><th>Areas</th></tr></thead><tbody>
   ${its.map(i=>`<tr><td>${esc(i.code)}</td><td>${esc(i.en)}<div class="small muted" lang="ar" dir="rtl">${esc(i.ar)}</div>${i.note?`<div class="small neg">${esc(i.note)}</div>`:""}</td><td class="n">${esc(num(i.qty))} ${esc(U(i.unit))}</td><td class="n">${esc(num(i.rate))}</td><td class="n">${esc(money(i.qty*i.rate))}</td>
    <td class="small">${i.mode==="qty"?"Quantity":"Percent"}${i.stages.length>1?"<br>"+i.stages.map(s=>`${esc(s.en)} ${s.w}%`).join(" · "):""}</td>
@@ -674,7 +906,7 @@ function vSetup(m){
  m.innerHTML=`<h1>Set up your first project</h1><p class="muted">Load the baseline prepared from your BOQ and drawings. You can clear the sample entries at any time.</p>
  ${BUNDLES.map(b=>`<div class="card" style="margin-top:14px"><h2>${esc(b.en)}</h2><p class="muted small">${esc(b.note)}</p>
   <label class="row small" style="margin:8px 0"><input type="checkbox" id="withSample" checked style="width:22px;height:22px"> Include sample site entries for 1–23 Nov (to see the reports working)</label>
-  <button class="btn pri" type="button" data-import="${esc(b.id)}">Load project</button> <span id="impMsg" class="small muted"></span></div>`).join("")}`;
+  <button class="btn pri" type="button" data-import="${esc(b.id)}">Load project</button> <span id="impMsg" class="small muted"></span></div>`).join("")}${newProjectForm()}`;
 }
 async function importBundle(id,withSample,btn){
  const b=BUNDLES.find(x=>x.id===id);const msg=$("#impMsg")||{};btn.disabled=true;

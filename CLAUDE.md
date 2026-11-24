@@ -44,6 +44,7 @@ docs/03-calculations.md        progress, planned, weekly report maths (source of
 docs/04-finish-schedule.md     Excel room finish schedule: format + import rules
 docs/05-architecture.md        stack, offline sync, auth/roles, photos, deployment, costs
 docs/06-decisions-and-open-questions.md
+docs/07-targets-kpis-change-orders.md   targets (no-BOQ projects), KPIs, change orders
 supabase/schema.sql            starting schema with RLS policies
 prototype/index.html           working single-file prototype (ran inside Claude; uses claude.use("db") etc.)
 prototype/baseline-wg5.json    real baseline: West Golf Apt 5 (77 BOQ lines, 17 areas, draft schedule)
